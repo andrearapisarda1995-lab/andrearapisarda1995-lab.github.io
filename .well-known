@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "it.siportal.gestionesna",
+        "sha256_cert_fingerprints": ["86:7A:A5:B4:1C:A9:69:2C:D1:B7:12:ED:D6:7D:9C:23:F2:E0:37:29:83:79:6D:B9:EE:A4:18:76:F1:C1:32:01"]
+      }
+    }]
