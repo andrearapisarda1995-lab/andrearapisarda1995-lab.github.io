@@ -1119,6 +1119,7 @@
         <select id="esitoTecnico" onchange="validateDiagnosi()" style="border:1.5px solid var(--line); border-radius:8px; padding:8px 10px; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13px; background:var(--white); color:var(--ink);">
           <option value="" disabled selected>Seleziona esito...</option>
           <option value="risolto">Guasto risolto</option>
+          <option value="risolto_monitoraggio">Risolto ma da monitorare</option>
           <option value="non_risolto">Guasto non risolto</option>
           <option value="non_migliorabile">Servizio non migliorabile</option>
         </select>
@@ -1307,7 +1308,9 @@
         <div><span class="ok">✓</span>Magazzino aggiornato</div>
         <div><span class="ok">✓</span>Email inviata al cliente</div>
         <div id="invoiceLine" style="display:none;"><span class="ok">✓</span>Addebito inserito in fattura</div>
+        <div><span class="ok">✓</span>Nota di chiusura aggiunta al ticket</div>
       </div>
+      <div class="note-flag" id="notaTicketChiusura" style="display:none; text-align:left; width:100%; margin-top:14px; background:var(--white); border-left-color:var(--ink); color:var(--ink);"></div>
       <button class="btn btn-ghost" id="generaPdfBtn" style="margin-top:16px; padding:12px 20px;" onclick="generaModuloPDF()">📄 Genera modulo PDF</button>
       <div id="generaPdfStatus" style="font-size:12px; color:#8a8577; margin-top:8px;"></div>
     </div>
@@ -1705,18 +1708,7 @@ async function generaModuloPDF(tipoModulo = 'sna'){
     const ticket = TICKETS[currentTicketId] || {};
     const t = computeTotals();
 
-    // Router/ONT installato: quello scelto in Diagnosi oppure, se non indicato lì,
-    // quello scaricato dal magazzino in "Materiale utilizzato"
-    let routerPdf = null;
-    if(deviceOn){
-      routerPdf = { n: DEVICES[tech][deviceIdx].n, sn: deviceSerialValue, mode: deviceMode };
-    } else {
-      const mappa = Object.entries(DEVICE_STOCK_MAP[tech] || {});
-      for(const m of materialiScaricatiSNA){
-        const hit = mappa.find(([nomeDev, nomeStock]) => nomeStock === m.n);
-        if(hit && m.codes.length){ routerPdf = { n: hit[0], sn: m.codes[0], mode: m.mode || 'noleggio' }; break; }
-      }
-    }
+    const routerPdf = calcolaRouterSNA(tech);
 
     // --- whiteout dei vecchi dati di esempio ---
     coords.whiteouts.forEach(w => whiteout(w[0],w[1],w[2],w[3]));
@@ -1764,33 +1756,8 @@ async function generaModuloPDF(tipoModulo = 'sna'){
     if(apptTimeVal) text(coords.oraInizioXY[0], coords.oraInizioXY[1], apptTimeVal, 9);
     if(oraChiusuraSNA) text(coords.oraFineXY[0], coords.oraFineXY[1], oraChiusuraSNA, 9); // ora di chiusura della SNA
 
-    // --- attività svolta (sintesi: causa guasto + eventuale dispositivo piazzato) ---
-    const causaParti = [];
-    ITEMS[tech].forEach((item, i)=>{
-      const cst = causaGuastoState[i];
-      if(cst && cst.sel) causaParti.push(item.n + (item.qty && cst.qty > 1 ? ' x' + cst.qty : '') + (item.caricoCliente ? ' (a carico cliente)' : '') + (item.tipoMuffola && cst.tipoMuffola ? ' (muffola ' + cst.tipoMuffola + ')' : '') + (item.luogo && cst.luogo ? ' (' + testoLuogo(cst.luogo) + (cst.luogo === 'interna' ? ', a carico cliente' : '') + ')' : ''));
-    });
-    if(routerPdf){
-      const modoTxt = routerPdf.mode === 'garanzia' ? 'garanzia' : (routerPdf.mode === 'acquisto' ? 'acquisto' : 'noleggio');
-      causaParti.push(routerPdf.n + (routerPdf.sn ? ' SN ' + routerPdf.sn : '') + ' (' + modoTxt + ')');
-    }
-    // altri apparati FTTH sostituiti in garanzia (es. ONT insieme al router)
-    {
-      const nomeStockRouter = routerPdf ? ((DEVICE_STOCK_MAP[tech] || {})[routerPdf.n] || routerPdf.n) : null;
-      materialiScaricatiSNA
-        .filter(m => m.mode === 'garanzia' && m.n !== nomeStockRouter)
-        .forEach(m => causaParti.push(m.n + ' SN ' + m.codes.join(', ') + ' (garanzia)'));
-    }
-    // apparati ritirati dal cliente (dalla commessa), con SN/MAC e stato
-    {
-      const t = TICKETS[currentTicketId] || {};
-      (t.commessa || []).forEach((v, i) => {
-        const st = ritiroCommessaState[i];
-        if(!st || st === 'no') return;
-        const dato = v.qty ? ' x' + v.qty : (v.codice ? (/^SM/.test(v.n) ? ' MAC ' : ' SN ') + v.codice : '');
-        causaParti.push('Ritirato ' + v.n + dato + ' (' + (st === 'guasto' ? 'guasto' : 'funzionante') + ')');
-      });
-    }
+    // --- attività svolta ---
+    const causaParti = partiAttivitaSvolta(tech, routerPdf);
     const causa = causaParti.join('; ');
     if(causa) righeACapo(font, causa, 8.5, 552 - coords.attivitaSvoltaXY[0], 3).forEach((riga, n) => text(coords.attivitaSvoltaXY[0], coords.attivitaSvoltaXY[1] + n*9.4, riga, 8.5));
 
@@ -1831,6 +1798,10 @@ async function generaModuloPDF(tipoModulo = 'sna'){
       }
       text(coords.itemsCostoX, topAltro+7, importo, 9);
       totaleModulo += t.uscitaTecnicaBase;
+    }
+    if(addebitoScelto && routerPdf && routerPdf.mode === 'acquisto'){
+      const dev = DEVICES[tech].find(x => x.n === routerPdf.n);
+      if(dev) totaleModulo += dev[clientType].acq;
     }
     text(coords.totaleXY[0], coords.totaleXY[1], '€ ' + totaleModulo.toFixed(2).replace('.',','), 9, true);
 
@@ -1984,6 +1955,90 @@ function verificaOtpCliente(){
   }
 }
 
+// Sintesi "Attività svolta" (usata nel PDF e nella nota di chiusura del ticket)
+function calcolaRouterSNA(tech){
+    // Router/ONT installato: quello scelto in Diagnosi oppure, se non indicato lì,
+    // quello scaricato dal magazzino in "Materiale utilizzato"
+  let routerPdf = null;
+    if(deviceOn){
+      routerPdf = { n: DEVICES[tech][deviceIdx].n, sn: deviceSerialValue, mode: deviceMode };
+    } else {
+      const mappa = Object.entries(DEVICE_STOCK_MAP[tech] || {});
+      for(const m of materialiScaricatiSNA){
+        const hit = mappa.find(([nomeDev, nomeStock]) => nomeStock === m.n);
+        if(hit && m.codes.length){ routerPdf = { n: hit[0], sn: m.codes[0], mode: m.mode || 'noleggio' }; break; }
+      }
+    }
+
+  return routerPdf;
+}
+function partiAttivitaSvolta(tech, routerPdf){
+    // --- attività svolta (sintesi: causa guasto + eventuale dispositivo piazzato) ---
+    const causaParti = [];
+    ITEMS[tech].forEach((item, i)=>{
+      const cst = causaGuastoState[i];
+      if(cst && cst.sel) causaParti.push(item.n + (item.qty && cst.qty > 1 ? ' x' + cst.qty : '') + (item.caricoCliente ? ' (a carico cliente)' : '') + (item.tipoMuffola && cst.tipoMuffola ? ' (muffola ' + cst.tipoMuffola + ')' : '') + (item.luogo && cst.luogo ? ' (' + testoLuogo(cst.luogo) + (cst.luogo === 'interna' ? ', a carico cliente' : '') + ')' : ''));
+    });
+    if(routerPdf){
+      const modoTxt = routerPdf.mode === 'garanzia' ? 'garanzia' : (routerPdf.mode === 'acquisto' ? 'acquisto' : 'noleggio');
+      causaParti.push(routerPdf.n + (routerPdf.sn ? ' SN ' + routerPdf.sn : '') + ' (' + modoTxt + ')');
+    }
+    // altri apparati FTTH sostituiti in garanzia (es. ONT insieme al router)
+    {
+      const nomeStockRouter = routerPdf ? ((DEVICE_STOCK_MAP[tech] || {})[routerPdf.n] || routerPdf.n) : null;
+      materialiScaricatiSNA
+        .filter(m => m.mode === 'garanzia' && m.n !== nomeStockRouter)
+        .forEach(m => causaParti.push(m.n + ' SN ' + m.codes.join(', ') + ' (garanzia)'));
+    }
+    // apparati ritirati dal cliente (dalla commessa), con SN/MAC e stato
+    {
+      const t = TICKETS[currentTicketId] || {};
+      (t.commessa || []).forEach((v, i) => {
+        const st = ritiroCommessaState[i];
+        if(!st || st === 'no') return;
+        const dato = v.qty ? ' x' + v.qty : (v.codice ? (/^SM/.test(v.n) ? ' MAC ' : ' SN ') + v.codice : '');
+        causaParti.push('Ritirato ' + v.n + dato + ' (' + (st === 'guasto' ? 'guasto' : 'funzionante') + ')');
+      });
+    }
+    return causaParti;
+}
+
+
+const ESITO_LABEL = {
+  risolto: 'Guasto risolto',
+  risolto_monitoraggio: 'Risolto ma da monitorare',
+  non_risolto: 'Guasto non risolto',
+  non_migliorabile: 'Servizio non migliorabile',
+};
+
+// Nota di chiusura scritta sul ticket del gestionale: resoconto dell'intervento
+// (+ "Tenere in monitoraggio" se l'esito è "Risolto ma da monitorare")
+function testoNotaTicketChiusura(){
+  const esito = document.getElementById('esitoTecnico').value;
+  const righe = [];
+  if(esito === 'risolto_monitoraggio') righe.push('Tenere in monitoraggio');
+  righe.push('Esito tecnico: ' + (ESITO_LABEL[esito] || '—'));
+  const attivita = partiAttivitaSvolta(techSelected, calcolaRouterSNA(techSelected));
+  righe.push('Attività svolta: ' + (attivita.length ? attivita.join('; ') : '—'));
+  righe.push('Addebito al cliente: ' + (addebitoScelto ? ('Sì' + (uscitaTecnicaOn ? ' (uscita tecnica € 30,00 + IVA)' : '')) : 'No'));
+  const t = TICKETS[currentTicketId] || {};
+  righe.push('Chiusura: ' + new Date().toLocaleDateString('it-IT') + (oraChiusuraSNA ? ' ore ' + oraChiusuraSNA : '') +
+             (loggedInPartner ? ' — tecnico ' + loggedInPartner.name : ''));
+  return righe;
+}
+
+function mostraNotaTicketChiusura(){
+  const box = document.getElementById('notaTicketChiusura');
+  if(!box) return;
+  const righe = testoNotaTicketChiusura();
+  const esc = str => String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  box.innerHTML = '<strong>Nota sul ticket ' + esc(currentTicketId) + '</strong><br>' +
+    righe.map((r, i) => (i === 0 && r === 'Tenere in monitoraggio')
+      ? '<div style="margin:6px 0; font-weight:700; color:var(--orange);">⚠ ' + esc(r) + '</div>'
+      : '<div style="margin-top:3px;">' + esc(r) + '</div>').join('');
+  box.style.display = 'block';
+}
+
 const TESTO_CHIUSURA = {
   risolto:
     "a seguito delle verifiche specialistiche ed intervento del tecnico presso la sua sede, siamo a comunicarle che il guasto da lei segnalato è stato risolto.\n\n" +
@@ -2020,7 +2075,8 @@ function inviaEmailChiusuraSNA(){
 
   const esitoSelect = document.getElementById('esitoTecnico');
   const esitoValue = esitoSelect ? esitoSelect.value : '';
-  const messaggio = TESTO_CHIUSURA[esitoValue] || TESTO_CHIUSURA.risolto;
+  // "Risolto ma da monitorare": al cliente parte la stessa email del guasto risolto
+  const messaggio = TESTO_CHIUSURA[esitoValue === 'risolto_monitoraggio' ? 'risolto' : esitoValue] || TESTO_CHIUSURA.risolto;
   const numeroSna = currentTicketId.replace('SNA-', '');
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
@@ -3075,6 +3131,7 @@ const ITEMS = {
     {n:'Rifacimento giunzione causa roditori', u:null, p:0.00, qty:false, luogo:true},
     {n:'Piazzata muffola causa roditori', u:null, p:0.00, qty:false, tipoMuffola:true, luogo:true},
     {n:'Intervento su PFS/PTA esterno', u:null, p:0.00, qty:false},
+    {n:'Cavi mal collegati dall\'utente', u:null, p:0.00, qty:false, caricoCliente:true},
   ],
   fwa: [
     {n:'Installazione aggiuntiva palo a ringhiera o staffa', u:null, p:39.00, qty:false},
@@ -3090,6 +3147,7 @@ const ITEMS = {
     {n:'Rifacimento plug e sostituzione del POE', u:null, p:0.00, qty:false},
     {n:'Sostituzione Patch POE-Router', u:null, p:0.00, qty:false},
     {n:'Sostituzione SM', u:null, p:0.00, qty:false},
+    {n:'Cavi mal collegati dall\'utente', u:null, p:0.00, qty:false, caricoCliente:true},
   ]
 };
 
@@ -4057,16 +4115,40 @@ function setCausaMuffola(i, tipo){
 }
 // Attività a carico del cliente: voci sempre a carico (es. patch fibra guasta) oppure
 // giunzione/muffola causa roditori con interruzione dentro la residenza
-function attivitaACaricoCliente(){
+function voceACaricoCliente(){
   return ITEMS[techSelected].some((item, i) => {
     const st = causaGuastoState[i];
     return st && st.sel && (item.caricoCliente || (item.luogo && st.luogo === 'interna'));
   });
 }
 
+// Router piazzato in acquisto o noleggio (da Diagnosi o dal magazzino): costo a carico del cliente
+function routerACaricoCliente(){
+  if(deviceOn && (deviceMode === 'acquisto' || deviceMode === 'noleggio')){
+    return { n: DEVICES[techSelected][deviceIdx].n, mode: deviceMode };
+  }
+  for(const [key, st] of Object.entries(usedState)){
+    if(!key.startsWith(techSelected + ':')) continue;
+    if(st && st.selected && st.selected.length && (st.mode === 'acquisto' || st.mode === 'noleggio')){
+      return { n: STOCK[techSelected][parseInt(key.split(':')[1])].n, mode: st.mode };
+    }
+  }
+  return null;
+}
+
+function attivitaACaricoCliente(){
+  return voceACaricoCliente();
+}
+
 function aggiornaAddebitoDefault(){
   const carico = attivitaACaricoCliente();
-  document.getElementById('addebitoCaricoNote').style.display = carico ? 'block' : 'none';
+  const nota = document.getElementById('addebitoCaricoNote');
+  nota.style.display = carico ? 'block' : 'none';
+  if(carico){
+    const motivi = [];
+    if(voceACaricoCliente()) motivi.push('in Diagnosi è stata indicata un\'attività a carico del cliente');
+    nota.innerHTML = '<strong>⚠ Attività a carico cliente</strong><br>' + motivi.join(' e ').replace(/^./, c => c.toUpperCase()) + ': l\'addebito dell\'uscita tecnica (€ 30,00 + IVA) è previsto di default.';
+  }
   document.getElementById('addebitoSiBadge').style.display = carico ? 'inline-block' : 'none';
   if(carico){
     addebitoScelto = true;      // addebito previsto di default
@@ -4077,8 +4159,7 @@ function aggiornaAddebitoDefault(){
 }
 
 function sceltaNoAddebito(){
-  if(attivitaACaricoCliente() && !confirm('È presente un\'attività a carico del cliente: l\'addebito è previsto. Vuoi davvero chiudere senza addebitare?')) return;
-  setNoAddebito();
+  setNoAddebito(); // la decisione finale è del tecnico: nessun avviso
 }
 
 function testoLuogo(l){ return l === 'interna' ? 'interruzione dentro la residenza' : 'interruzione fuori dalla residenza'; }
@@ -4157,13 +4238,13 @@ function validateDiagnosi(){
 }
 
 // sync schermate dipendenti dal modulo costi
-const BUILD_VERSION = 'build-2026-09-28-zyxel-rientrati-usati';
+const BUILD_VERSION = 'build-2026-09-29-risolto-monitorare';
 console.log('%c[SNA APP] Versione caricata: ' + BUILD_VERSION, 'background:#ff5a1f; color:#fff; padding:3px 8px; border-radius:4px; font-weight:bold;');
 document.addEventListener('DOMContentLoaded', ()=>{
   renderCosti();
   const apptDateEl = document.getElementById('apptDate');
   if(apptDateEl) apptDateEl.min = todayIso();
-  // (versione app: nessuna notifica simulata)
+  // (PWA) niente notifica push simulata
   const buildTag = document.getElementById('buildVersionTag');
   if(buildTag) buildTag.textContent = BUILD_VERSION;
 });
@@ -4280,6 +4361,7 @@ goTo = function(id, step){
     oraChiusuraSNA = String(adesso.getHours()).padStart(2,'0') + ':' + String(adesso.getMinutes()).padStart(2,'0');
     document.getElementById('successTicketId').textContent = currentTicketId;
     inviaEmailChiusuraSNA();
+    mostraNotaTicketChiusura();
   }
   if(id === 'screen-addebito'){
     aggiornaAddebitoDefault();
