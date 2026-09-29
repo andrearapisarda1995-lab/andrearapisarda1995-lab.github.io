@@ -1,7 +1,7 @@
 // Service worker minimo: rende l'app installabile e la apre anche con rete scarsa.
 // Le chiamate esterne (EmailJS, pdf-lib, font) passano sempre dalla rete.
-const CACHE = 'gestione-sna-v1';
-const FILES = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'gestione-sna-v2';
+const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
