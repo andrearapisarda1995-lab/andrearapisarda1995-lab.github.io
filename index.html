@@ -492,6 +492,16 @@
   .total-row .k{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px;}
   .total-row .v{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:20px;}
 
+  .mag-gruppo{flex-shrink:0; border-radius:12px; overflow:hidden; margin-top:10px; border:1.5px solid var(--line); background:var(--white);}
+  .mag-gruppo-head{display:flex; align-items:center; gap:10px; padding:14px 14px; cursor:pointer; user-select:none;}
+  .mag-gruppo-tit{flex:1; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; display:flex; flex-direction:column; line-height:1.25;}
+  .mag-gruppo-tit small{font-family:inherit; font-weight:400; font-size:11.5px; opacity:.85;}
+  .mag-gruppo-cnt{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12px; background:rgba(255,255,255,.18); padding:3px 8px; border-radius:20px; white-space:nowrap;}
+  .mag-gruppo-arr{transition:transform .2s; font-size:14px;}
+  .mag-gruppo-body > *{flex-shrink:0;}
+  .mag-gruppo-body{display:none; padding:12px; flex-direction:column; gap:8px; background:var(--paper);}
+  .mag-gruppo.open .mag-gruppo-body{display:flex;}
+  .mag-gruppo.open .mag-gruppo-arr{transform:rotate(180deg);}
   .note-flag{
     background:var(--orange-dim);
     border-left:3px solid var(--orange);
@@ -644,7 +654,7 @@
   }
   .stock-top{display:flex; justify-content:space-between; align-items:center;}
   .stock-name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14.5px;}
-  .stock-qty{
+  .stock-qty{white-space:nowrap; flex-shrink:0; 
     font-family:'IBM Plex Mono',monospace;
     font-weight:700;
     font-size:13px;
@@ -1031,16 +1041,96 @@
       <div class="seg-opt sel" id="seg-fwa" onclick="selectMagazzinoTech('fwa')">FWA</div>
       <div class="seg-opt" id="seg-ftth" onclick="selectMagazzinoTech('ftth')">FTTH</div>
     </div>
-    <div id="stockList" style="display:flex; flex-direction:column; gap:10px;"></div>
-
-    <div class="field" style="margin-top:6px;">
-      <label>Router Zyxel rientrati usati <span style="font-weight:400; text-transform:none; letter-spacing:0;">(ritirati funzionanti da clienti)</span></label>
-      <div id="zyxelUsatiList" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <button class="btn btn-ghost" style="padding:12px; margin-bottom:10px;" onclick="apriApparatiPossesso()">➕ Inserimento Apparati già in possesso</button>
+    <!-- Magazzino diviso in tre gruppi (a scomparsa) -->
+    <div class="mag-gruppo" id="grpNuovo">
+      <div class="mag-gruppo-head" onclick="toggleGruppoMag('grpNuovo')" style="background:var(--ink); color:var(--white);">
+        <span class="mag-gruppo-tit">📦 Materiale nuovo<small>nuovo e funzionante</small></span>
+        <span class="mag-gruppo-cnt" id="cntNuovo">0 pz</span><span class="mag-gruppo-arr">▾</span>
+      </div>
+      <div class="mag-gruppo-body"><div id="stockList" style="display:flex; flex-direction:column; gap:10px;"></div></div>
     </div>
 
-    <div class="field" style="margin-top:6px;">
-      <label>Materiale guasto <span style="font-weight:400; text-transform:none; letter-spacing:0;">(ritirato da SNA, non utilizzabile)</span></label>
-      <div id="faultyStockList" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div class="mag-gruppo" id="grpUsato">
+      <div class="mag-gruppo-head" onclick="toggleGruppoMag('grpUsato')" style="background:var(--petrol); color:var(--white);">
+        <span class="mag-gruppo-tit">♻️ Materiale usato funzionante<small>ritirato dai clienti</small></span>
+        <span class="mag-gruppo-cnt" id="cntUsato">0 pz</span><span class="mag-gruppo-arr">▾</span>
+      </div>
+      <div class="mag-gruppo-body"><div id="zyxelUsatiList" style="display:flex; flex-direction:column; gap:8px;"></div></div>
+    </div>
+
+    <div class="mag-gruppo" id="grpGuasto">
+      <div class="mag-gruppo-head" onclick="toggleGruppoMag('grpGuasto')" style="background:var(--orange); color:var(--white);">
+        <span class="mag-gruppo-tit">⚠️ Materiale guasto<small>ritirato dai clienti e non più riutilizzabile</small></span>
+        <span class="mag-gruppo-cnt" id="cntGuasto">0 pz</span><span class="mag-gruppo-arr">▾</span>
+      </div>
+      <div class="mag-gruppo-body">
+        <div id="faultyStockList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <button class="btn btn-ghost" id="avviaRientroBtn" style="padding:12px; margin-top:8px; border-color:var(--orange); color:var(--orange);" onclick="avviaRientroGuasti()">↩ Avvia procedura di rientro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN INSERIMENTO APPARATI GIÀ IN POSSESSO (materiale reale non ancora registrato) -->
+  <div class="screen" id="screen-apparati-possesso">
+    <div class="eyebrow" id="possessoEyebrow">Magazzino personale · FWA</div>
+    <h1>Inserimento Apparati già in possesso</h1>
+    <p class="desc">Registra il materiale che hai già fisicamente in magazzino ma che non risulta ancora nell'app.</p>
+    <div class="segmented">
+      <div class="seg-opt sel" id="possSeg-fwa" onclick="selectPossessoTech('fwa')">FWA</div>
+      <div class="seg-opt" id="possSeg-ftth" onclick="selectPossessoTech('ftth')">FTTH</div>
+    </div>
+    <div class="field">
+      <label>Componente <span style="color:var(--orange);">*</span></label>
+      <select id="possessoVoce" onchange="aggiornaCampoPossesso()" style="border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; font-size:13.5px; width:100%; background:var(--white); color:var(--ink);"></select>
+    </div>
+    <div class="field" id="possessoCodiceField" style="display:none;">
+      <label id="possessoCodiceLabel">Serial Number <span style="color:var(--orange);">*</span></label>
+      <input id="possessoCodice" type="text" autocomplete="off" autocapitalize="characters" oninput="inputCodicePossesso(this)" style="border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; font-size:14px; width:100%; text-transform:uppercase;">
+      <div id="possessoCodiceHint" style="font-size:11.5px; color:#8a8577; margin-top:4px;"></div>
+    </div>
+    <div class="field" id="possessoWmacField" style="display:none;">
+      <label>Wireless MAC <span style="color:var(--orange);">*</span></label>
+      <input id="possessoWmac" type="text" autocomplete="off" autocapitalize="characters" oninput="inputCodicePossesso(this)" style="border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; font-size:14px; width:100%; text-transform:uppercase;">
+      <div id="possessoWmacHint" style="font-size:11.5px; color:#8a8577; margin-top:4px;"></div>
+    </div>
+    <div class="field" id="possessoQtyField" style="display:none;">
+      <label>Quantità <span style="color:var(--orange);">*</span></label>
+      <input id="possessoQty" type="number" min="1" step="1" value="1" inputmode="numeric" style="border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; font-family:'IBM Plex Mono',monospace; font-size:14px; width:100%;">
+      <div style="font-size:11.5px; color:#8a8577; margin-top:4px;">Materiale senza SN/MAC: indica solo quanti pezzi hai.</div>
+    </div>
+    <div class="note-flag" id="possessoErrore" style="display:none; margin-bottom:8px;"></div>
+    <button class="btn btn-primary" onclick="aggiungiApparatoPossesso()">Aggiungi al magazzino</button>
+    <div class="field" style="margin-top:10px;">
+      <label>Inseriti in questa sessione</label>
+      <div id="possessoInseriti" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN RIENTRO MATERIALE GUASTO (restituzione all'azienda) -->
+  <div class="screen" id="screen-rientro-guasti">
+    <div class="eyebrow">Magazzino personale · Materiale guasto</div>
+    <h1>Procedura di rientro</h1>
+    <div id="rientroForm">
+      <p class="desc">Seleziona il materiale guasto che stai restituendo all'azienda.</p>
+      <label class="item-row" style="cursor:pointer; align-items:center; gap:10px; margin:8px 0;">
+        <input type="checkbox" id="rientroSelTutto" onchange="rientroSelezionaTutto(this.checked)" style="width:18px; height:18px;">
+        <span style="font-weight:700;">Seleziona tutto</span>
+      </label>
+      <div id="rientroLista" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <div class="note-flag" id="rientroErrore" style="display:none; margin-top:10px;"></div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="concludiRientroBtn" style="margin-top:14px;" onclick="concludiRientroGuasti()">Concludi rientro</button>
+    </div>
+    <div id="rientroEsito" style="display:none;">
+      <div class="note-flag" style="display:block; background:var(--green-dim); border-left-color:var(--green); color:#1a5c38;">
+        <strong>✓ Rientro concluso</strong> — il materiale selezionato è stato rimosso dal materiale guasto e l'email di rientro è stata inviata.
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Email inviata</label>
+        <div id="rientroEmailTesto" style="white-space:pre-line; background:var(--white); border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; font-size:12.5px; line-height:1.5; color:var(--ink);"></div>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:12px;" onclick="goBack()">Torna al magazzino</button>
     </div>
   </div>
 
@@ -1883,7 +1973,7 @@ let otpVerificato = false;
 let oraChiusuraSNA = '';
 let materialiScaricatiSNA = [];
 // SNA FTTH: apparati sempre in garanzia in caso di sostituzione (niente Noleggio/Acquisto)
-const APPARATI_GARANZIA_FTTH = ['ONT Huawei GPON', 'ONT Huawei XGPON', 'Router Huawei GPON', 'Router Huawei XGPON', 'Router Zyxel EX3501-T0', 'Router Zyxel EX3301-T0'];
+const APPARATI_GARANZIA_FTTH = ['ONT Huawei GPON', 'ONT Huawei XGPON', 'Router Huawei GPON', 'Router Huawei XGPON', 'Router Zyxel EX3501-T0', 'Router Zyxel EX3301-T0', 'Router Zyxel DX3301-T0'];
 function inGaranzia(tech, nome){ return tech === 'ftth' && APPARATI_GARANZIA_FTTH.includes(nome); }
 let magazzinoAggiornatoSNA = false; // true se alla chiusura c'è stato almeno un movimento di magazzino // materiale con SN/MAC scaricato alla chiusura (per il modulo PDF) // HH:MM registrata alla chiusura del ticket (Ora fine nel modulo)
 
@@ -2116,25 +2206,30 @@ const STOCK = {
   fwa: [
     {n:'SM450b HG', trackBy:'mac', codes:['A4:2B:8F:11:C0:34','A4:2B:8F:11:C0:47']},
     {n:'SM450b MG', trackBy:'mac', codes:['A4:2B:8F:22:D1:09']},
-    {n:'Router Zyxel EX3501-T0', trackBy:'sn', codes:['ZX35019281','ZX35019344','ZX35019402']},
-    {n:'Router Zyxel EX3301-T0', trackBy:'sn', codes:['ZX33019112','ZX33019187']},
-    {n:'Fritzbox 7530', trackBy:'sn', codes:['FB753019201']},
-    {n:'Fritzbox 7530 AX', trackBy:'sn', codes:['FB753X19344']},
-    {n:'Fritzbox 7590', trackBy:'sn', codes:['FB759019478']},
-    {n:'Fritzbox 7590 AX', trackBy:'sn', codes:['FB759X19502']},
+    // ePMP: due stringhe per antenna -> in codes il MAC (ESN), il Wireless MAC in WIRELESS_MAC
+    {n:'ePMP Force 180', trackBy:'mac', dualMac:true, codes:['000456F59FE6']},
+    {n:'ePMP Force 200', trackBy:'mac', dualMac:true, codes:['58C17A4A726A']},
+    {n:'Router Zyxel EX3501-T0', trackBy:'sn', codes:['S250Y11019281','S250Y11019344','S250Y11019402']},
+    {n:'Router Zyxel EX3301-T0', trackBy:'sn', codes:['S230Y11019112','S230Y11019187']},
+    {n:'Router Zyxel DX3301-T0', trackBy:'sn', codes:['S230Y12104417']},
+    {n:'Fritzbox 7530', trackBy:'sn', codes:['N47377930019201']},
+    {n:'Fritzbox 7530 AX', trackBy:'sn', codes:['N47377930019344']},
+    {n:'Fritzbox 7590', trackBy:'sn', codes:['N47377930019478']},
+    {n:'Fritzbox 7590 AX', trackBy:'sn', codes:['N47377930019502']},
     {n:'Alimentatori POE', trackBy:'counter', qty:5},
   ],
   ftth: [
-    {n:'Router Zyxel EX3501-T0', trackBy:'sn', codes:['ZX35018871','ZX35018902']},
-    {n:'Router Zyxel EX3301-T0', trackBy:'sn', codes:['ZX33018765']},
-    {n:'Fritzbox 7530', trackBy:'sn', codes:['FB753018876']},
-    {n:'Fritzbox 7530 AX', trackBy:'sn', codes:['FB753X18933']},
-    {n:'Fritzbox 7590', trackBy:'sn', codes:['FB759018999']},
-    {n:'Fritzbox 7590 AX', trackBy:'sn', codes:['FB759X19067']},
-    {n:'ONT Huawei GPON', trackBy:'sn', codes:['HW-GP-77213','HW-GP-77245','HW-GP-77260','HW-GP-77288']},
-    {n:'ONT Huawei XGPON', trackBy:'sn', codes:['HW-XG-40521']},
-    {n:'Router Huawei GPON', trackBy:'sn', codes:['HW-RG-90112','HW-RG-90134']},
-    {n:'Router Huawei XGPON', trackBy:'sn', codes:['HW-RX-51002']},
+    {n:'Router Zyxel EX3501-T0', trackBy:'sn', codes:['S250Y11018871','S250Y11018902']},
+    {n:'Router Zyxel EX3301-T0', trackBy:'sn', codes:['S230Y11018765']},
+    {n:'Router Zyxel DX3301-T0', trackBy:'sn', codes:['S230Y12104582']},
+    {n:'Fritzbox 7530', trackBy:'sn', codes:['N47377930018876']},
+    {n:'Fritzbox 7530 AX', trackBy:'sn', codes:['N47377930018933']},
+    {n:'Fritzbox 7590', trackBy:'sn', codes:['N47377930018999']},
+    {n:'Fritzbox 7590 AX', trackBy:'sn', codes:['N47377930019067']},
+    {n:'ONT Huawei GPON', trackBy:'sn', codes:['48575443DD077213','48575443DD077245','48575443DD077260','48575443DD077288']},
+    {n:'ONT Huawei XGPON', trackBy:'sn', codes:['48575443DE040521']},
+    {n:'Router Huawei GPON', trackBy:'sn', codes:['4857544383A90112','4857544383A90134']},
+    {n:'Router Huawei XGPON', trackBy:'sn', codes:['4857544384B51002']},
     {n:'Muffola aerea', trackBy:'counter', qty:6},
     {n:'Muffola interrata', trackBy:'counter', qty:3},
     {n:'Borchie', trackBy:'counter', qty:12},
@@ -2143,20 +2238,412 @@ const STOCK = {
   ]
 };
 let magazzinoTech = 'fwa';
-const FAULTY_STOCK = {fwa: [], ftth: []};
-// Router Zyxel ritirati funzionanti dal cliente: tenuti in aree distinte, separati dai router nuovi
-const MODELLI_ZYXEL_USATI = ['Router Zyxel EX3501-T0', 'Router Zyxel EX3301-T0'];
-const ZYXEL_USATI = {
-  fwa:  {'Router Zyxel EX3501-T0': [{code:'ZX35012207', ticket:'SNA-87990', data:'12/09/2026'}], 'Router Zyxel EX3301-T0': []},
-  ftth: {'Router Zyxel EX3501-T0': [], 'Router Zyxel EX3301-T0': [{code:'ZX33011940', ticket:'DISN-5480', data:'18/09/2026'}]},
+// Wireless MAC delle antenne ePMP, indicizzato per MAC (ESN)
+const WIRELESS_MAC = {'000456F59FE6':'000456F59FE7', '58C17A4A726A':'58C17A4A726B'};
+function etichettaCodice(item, c){
+  if(item.dualMac) return 'MAC (ESN) ' + c + (WIRELESS_MAC[c] ? ' · Wireless MAC ' + WIRELESS_MAC[c] : '');
+  return (item.trackBy === 'mac' ? 'MAC ' : 'SN ') + c;
+}
+// Materiale guasto: NON riutilizzabile (non compare mai tra il materiale selezionabile),
+// resta qui finché il partner non lo restituisce all'azienda con la procedura di rientro
+const FAULTY_STOCK = {
+  fwa: [
+    {type:'SM450b HG', code:'A4:2B:8F:10:9A:21', qty:null, ticket:'SNA-87955', cliente:'Salvatore Greco', contratto:'2025W00731', data:'08/09/2026'},
+    {type:'Router Zyxel EX3501-T0', code:'S250Y11009876', qty:null, ticket:'SNA-87962', cliente:'Luca Messina', contratto:'2024W00918', data:'15/09/2026'},
+    {type:'Alimentatori POE', code:null, qty:2, ticket:'SNA-87962', cliente:'Luca Messina', contratto:'2024W00918', data:'15/09/2026'},
+  ],
+  ftth: [
+    {type:'ONT Huawei GPON', code:'48575443DD071102', qty:null, ticket:'SNA-87971', cliente:'Chiara Russo', contratto:'2025F00412', data:'19/09/2026'},
+    {type:'Router Huawei GPON', code:'4857544383A88810', qty:null, ticket:'SNA-87980', cliente:'Giovanni Leone', contratto:'2026F00077', data:'22/09/2026'},
+  ],
 };
+// Router Zyxel ritirati funzionanti dal cliente: tenuti in aree distinte, separati dai router nuovi
+const MODELLI_ZYXEL_USATI = ['Router Zyxel EX3501-T0', 'Router Zyxel EX3301-T0', 'Router Zyxel DX3301-T0'];
+const ZYXEL_USATI = {
+  fwa:  {'Router Zyxel EX3501-T0': [{code:'S250Y11012207', ticket:'SNA-87990', cliente:'Paola Di Mauro', contratto:'2025W00288', data:'12/09/2026'}], 'Router Zyxel EX3301-T0': [], 'Router Zyxel DX3301-T0': []},
+  ftth: {'Router Zyxel EX3501-T0': [], 'Router Zyxel EX3301-T0': [{code:'S230Y11011940', ticket:'DISN-5480', cliente:'Marco Scalia', contratto:'2023F00190', data:'18/09/2026'}], 'Router Zyxel DX3301-T0': []},
+};
+// (migrazione) gli Zyxel usati di esempio entrano nel magazzino come pezzi USATI riutilizzabili
+function migraZyxelUsati(){
+  ['fwa','ftth'].forEach(tech => Object.entries(ZYXEL_USATI[tech]).forEach(([modello, area]) => {
+    const item = STOCK[tech].find(it => it.n === modello);
+    area.forEach(x => {
+      if(item && !item.codes.includes(x.code)) item.codes.push(x.code);
+      USATI_INFO[x.code] = { cliente: x.cliente, contratto: x.contratto, data: x.data };
+    });
+    area.length = 0;
+  }));
+}
+// Materiale USATO funzionante ritirato dai clienti e rimesso nel magazzino (riutilizzabile):
+// per gli apparati con SN/MAC -> USATI_INFO[codice] ; per il materiale a contatore -> USATI_QTY[tech][nome]
+const USATI_INFO = {
+  'A4:2B:8F:11:C0:47': {cliente:'Antonino Sortino', contratto:'2024W00455', data:'05/09/2026'},
+};
+const USATI_QTY = {
+  fwa:  {},   // i POE ritirati non sono mai riutilizzabili: vanno sempre tra il materiale guasto
+  ftth: {},
+};
+function registraUsato(tech, nome, code, qty, cliente, contratto){
+  const meta = { cliente: cliente || '', contratto: contratto || '', data: fmtDateIt(todayIso()) };
+  if(code) USATI_INFO[code] = meta;
+  else if(qty){ (USATI_QTY[tech][nome] = USATI_QTY[tech][nome] || []).push(Object.assign({qty}, meta)); }
+}
+migraZyxelUsati();
+function qtyUsataContatore(tech, nome){ return (USATI_QTY[tech][nome] || []).reduce((a, x) => a + x.qty, 0); }
+// dopo uno scarico: i pezzi usati non possono superare quelli rimasti (si consumano prima gli usati)
+function allineaUsatiContatore(tech, item, scaricati){
+  let daTogliere = scaricati;
+  const lista = USATI_QTY[tech][item.n] || [];
+  while(daTogliere > 0 && lista.length){
+    const x = lista[0];
+    const t = Math.min(x.qty, daTogliere);
+    x.qty -= t; daTogliere -= t;
+    if(x.qty <= 0) lista.shift();
+  }
+}
+
 // true se l'apparato è finito nell'area "rientrati usati"
-function registraZyxelUsato(tech, modello, code, ticket){
+// Gli Zyxel usati ora sono riutilizzabili come il resto del materiale usato:
+// non vanno più in un'area separata ma nel magazzino, marcati come USATI (vedi registraUsato)
+function registraZyxelUsato(){ return false; }
+function registraZyxelUsatoLegacy(tech, modello, code, ticket, cliente, contratto){
   if(!MODELLI_ZYXEL_USATI.includes(modello) || !code) return false;
   const area = ZYXEL_USATI[tech][modello];
-  if(!area.some(x => x.code === code)) area.push({ code, ticket, data: fmtDateIt(todayIso()) });
+  if(!area.some(x => x.code === code)) area.push({ code, ticket, cliente: cliente || '', contratto: contratto || '', data: fmtDateIt(todayIso()) });
   return true;
 }
+
+
+// ---------------------------------------------------------------------
+// INSERIMENTO APPARATI GIÀ IN POSSESSO
+// Materiale che il partner ha realmente in magazzino ma non ancora registrato.
+// In produzione: ogni inserimento viene inviato al gestionale (Sibiz) per la registrazione.
+// ---------------------------------------------------------------------
+const CODICI_DICHIARATI = new Set();
+const APPARATI_DICHIARATI = []; // {tech, n, trackBy, codice|qty, data}
+let possessoTech = 'fwa';
+// Formato dei Serial Number (ricavato da seriali reali): controllo solo sulla lunghezza,
+// lettere e numeri liberi come il tecnico li legge sull'etichetta
+const FORMATI_SN = [
+  { re: /Zyxel/i,          len: 13, es: 'S250Y11107331' },
+  { re: /Fritz/i,          len: 15, es: 'N47377930021442' },
+  { re: /^ONT Huawei/i,    len: 16, es: '48575443DD0346A3' },
+  { re: /^Router Huawei/i, len: 16, es: '4857544383A149A4' },
+];
+function formatoSN(nome){ return FORMATI_SN.find(f => f.re.test(nome)) || null; }
+// formato di esempio (MAC ESN, Wireless MAC) delle antenne ePMP
+const FORMATO_EPMP = {
+  'ePMP Force 180': ['000456F59FE6', '000456F59FE7'],
+  'ePMP Force 200': ['58C17A4A726A', '58C17A4A726B'],
+};
+
+function apriApparatiPossesso(){
+  goTo('screen-apparati-possesso', 0);
+  selectPossessoTech(magazzinoTech);
+}
+
+function selectPossessoTech(tech){
+  possessoTech = tech;
+  document.getElementById('possSeg-fwa').classList.toggle('sel', tech === 'fwa');
+  document.getElementById('possSeg-ftth').classList.toggle('sel', tech === 'ftth');
+  document.getElementById('possessoEyebrow').textContent = 'Magazzino personale · ' + tech.toUpperCase();
+  const sel = document.getElementById('possessoVoce');
+  sel.innerHTML = '<option value="" disabled selected>Seleziona componente...</option>' +
+    STOCK[tech].map((item, i) => `<option value="${i}">${item.trackBy === 'mac' ? 'Antenna ' : ''}${item.n}</option>`).join('');
+  aggiornaCampoPossesso();
+  renderPossessoInseriti();
+}
+
+function aggiornaCampoPossesso(){
+  erroreApparatoPossesso('');
+  const v = document.getElementById('possessoVoce').value;
+  const item = v === '' ? null : STOCK[possessoTech][+v];
+  const codiceField = document.getElementById('possessoCodiceField');
+  const qtyField = document.getElementById('possessoQtyField');
+  const input = document.getElementById('possessoCodice');
+  input.value = '';
+  document.getElementById('possessoWmac').value = '';
+  document.getElementById('possessoWmacField').style.display = 'none';
+  document.getElementById('possessoQty').value = 1;
+  codiceField.style.display = item && item.trackBy !== 'counter' ? 'block' : 'none';
+  qtyField.style.display = item && item.trackBy === 'counter' ? 'block' : 'none';
+  if(!item || item.trackBy === 'counter') return;
+  const isMac = item.trackBy === 'mac';
+  if(item.dualMac){
+    const es = FORMATO_EPMP[item.n] || FORMATO_EPMP['ePMP Force 180'];
+    document.getElementById('possessoCodiceLabel').innerHTML = 'MAC (ESN) <span style="color:var(--orange);">*</span>';
+    input.placeholder = 'Es. ' + es[0];
+    document.getElementById('possessoCodiceHint').textContent = 'Formato: ' + es[0] + ' (12 caratteri, senza ":").';
+    document.getElementById('possessoWmac').placeholder = 'Es. ' + es[1];
+    document.getElementById('possessoWmacHint').textContent = 'Formato: ' + es[1] + ' (12 caratteri, senza ":").';
+    document.getElementById('possessoWmacField').style.display = 'block';
+    return;
+  }
+  document.getElementById('possessoCodiceLabel').innerHTML = (isMac ? 'MAC Address' : 'Serial Number') + ' <span style="color:var(--orange);">*</span>';
+  input.placeholder = isMac ? 'Es. A4:2B:8F:11:C0:34' : 'Es. ' + ((formatoSN(item.n) || {}).es || '');
+  document.getElementById('possessoCodiceHint').textContent = isMac
+    ? 'Antenna: inserisci il MAC così come lo leggi (12 caratteri, i ":" vengono aggiunti da soli).'
+    : (formatoSN(item.n) ? 'Formato: ' + formatoSN(item.n).es + ' (' + formatoSN(item.n).len + ' caratteri).' : 'Inserisci il Serial Number riportato sull\'etichetta dell\'apparato.');
+}
+
+function inputCodicePossesso(el){
+  erroreApparatoPossesso('');
+  const v = document.getElementById('possessoVoce').value;
+  const item = v === '' ? null : STOCK[possessoTech][+v];
+  if(item && item.dualMac){
+    // ePMP: 12 caratteri senza ":" (solo lettere e numeri)
+    el.value = el.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase().slice(0, 12);
+  } else if(item && item.trackBy === 'mac'){
+    // nessun vincolo su lettere/numeri: solo 12 caratteri, i ":" li aggiunge l'app
+    const car = el.value.replace(/[:\s]/g, '').toUpperCase().slice(0, 12);
+    el.value = (car.match(/.{1,2}/g) || []).join(':');
+  } else {
+    const f = item ? formatoSN(item.n) : null;
+    el.value = el.value.toUpperCase().replace(f ? /[^0-9A-Z]/g : /\s+/g, '');
+    if(f) el.value = el.value.slice(0, f.len);
+  }
+}
+
+// codice già presente da qualche parte nel magazzino del partner (nuovi, usati, guasti)?
+function codiceGiaInMagazzino(codice){
+  const norm = c => String(c || '').replace(/[^0-9A-Z]/gi, '').toUpperCase();
+  const k = norm(codice);
+  for(const tech of ['fwa', 'ftth']){
+    if(STOCK[tech].some(item => (item.codes || []).some(c => norm(c) === k))) return true;
+    if(Object.values(WIRELESS_MAC).some(w => norm(w) === k)) return true;
+    if(Object.values(ZYXEL_USATI[tech]).some(area => area.some(x => norm(x.code) === k))) return true;
+    if(FAULTY_STOCK[tech].some(x => norm(x.code) === k)) return true;
+  }
+  return false;
+}
+
+function erroreApparatoPossesso(msg){
+  const el = document.getElementById('possessoErrore');
+  el.innerHTML = msg ? '<strong>⚠ ' + msg + '</strong>' : '';
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function aggiungiApparatoPossesso(){
+  erroreApparatoPossesso('');
+  const v = document.getElementById('possessoVoce').value;
+  if(v === ''){ erroreApparatoPossesso('Seleziona il componente da inserire.'); return; }
+  const item = STOCK[possessoTech][+v];
+  const data = fmtDateIt(todayIso());
+  if(item.trackBy === 'counter'){
+    const q = parseInt(document.getElementById('possessoQty').value, 10);
+    if(!q || q < 1){ erroreApparatoPossesso('Inserisci una quantità valida (almeno 1).'); return; }
+    item.qty += q;
+    APPARATI_DICHIARATI.push({ tech: possessoTech, n: item.n, trackBy: 'counter', qty: q, data });
+  } else {
+    const input = document.getElementById('possessoCodice');
+    const codice = input.value.trim();
+    let wmac = null;
+    if(item.dualMac){
+      wmac = document.getElementById('possessoWmac').value.trim();
+      if(codice.length !== 12){ erroreApparatoPossesso('Il MAC (ESN) deve avere 12 caratteri: ne hai inseriti ' + codice.length + '.'); return; }
+      if(wmac.length !== 12){ erroreApparatoPossesso('Il Wireless MAC deve avere 12 caratteri: ne hai inseriti ' + wmac.length + '.'); return; }
+      if(wmac === codice){ erroreApparatoPossesso('MAC (ESN) e Wireless MAC sono uguali: controlla l\'etichetta, devono essere due codici diversi.'); return; }
+      if(codiceGiaInMagazzino(wmac)){ erroreApparatoPossesso('Il Wireless MAC ' + wmac + ' è già presente nel tuo magazzino.'); return; }
+    } else if(item.trackBy === 'mac'){
+      if(codice.replace(/:/g,'').length !== 12){ erroreApparatoPossesso('Il MAC deve avere 12 caratteri: ne hai inseriti ' + codice.replace(/:/g,'').length + '.'); return; }
+    } else if(formatoSN(item.n) && codice.length !== formatoSN(item.n).len){
+      const f = formatoSN(item.n);
+      erroreApparatoPossesso('Il Serial Number di questo apparato deve avere ' + f.len + ' caratteri (es. ' + f.es + '): ne hai inseriti ' + codice.length + '.'); return;
+    } else if(codice.length < 4){
+      erroreApparatoPossesso('Inserisci il Serial Number dell\'apparato.'); return;
+    }
+    if(codiceGiaInMagazzino(codice)){
+      erroreApparatoPossesso((item.trackBy === 'mac' ? 'Il MAC ' : 'Il Serial Number ') + codice + ' è già presente nel tuo magazzino.');
+      return;
+    }
+    item.codes.push(codice);
+    if(wmac) WIRELESS_MAC[codice] = wmac;
+    CODICI_DICHIARATI.add(codice);
+    APPARATI_DICHIARATI.push({ tech: possessoTech, n: item.n, trackBy: item.trackBy, codice, wmac, data });
+  }
+  // pronto per il prossimo inserimento dello stesso componente
+  document.getElementById('possessoCodice').value = '';
+  document.getElementById('possessoWmac').value = '';
+  document.getElementById('possessoQty').value = 1;
+  renderPossessoInseriti();
+}
+
+function renderPossessoInseriti(){
+  const box = document.getElementById('possessoInseriti');
+  const righe = APPARATI_DICHIARATI.filter(x => x.tech === possessoTech);
+  if(!righe.length){
+    box.innerHTML = '<div class="stock-counter-only" style="padding:4px 2px;">Nessun apparato inserito.</div>';
+    return;
+  }
+  box.innerHTML = righe.slice().reverse().map(x => {
+    const idx = APPARATI_DICHIARATI.indexOf(x);
+    // SM (antenna): stesso pulsante delle disinstallazioni per cancellare il file zero touch
+    const zeroTouch = x.trackBy !== 'mac' ? '' : (x.configRimossa
+      ? `<div class="note-flag" style="display:block; margin-top:8px; background:var(--green-dim); border-left-color:var(--green); color:#1a5c38;">
+           <strong>✓ Configurazione rimossa dall'antenna</strong> — il file di configurazione del cliente precedente è stato cancellato.
+         </div>`
+      : `<button class="btn btn-primary" style="margin-top:8px; padding:10px;" onclick="rimuoviZeroTouchPossesso(${idx}, this)">⚡ Rimuovi file zero touch</button>`);
+    return `
+    <div class="stock-card" style="border-color:var(--petrol); background:var(--petrol-dim);">
+      <div class="stock-top">
+        <div class="stock-name">${x.trackBy === 'mac' ? 'Antenna ' : ''}${x.n}</div>
+        <span class="badge" style="background:var(--green); color:var(--white);">✓ AGGIUNTO</span>
+      </div>
+      <div class="stock-counter-only">${x.trackBy === 'counter' ? '+' + x.qty + ' pz' : (x.wmac ? 'ESN ' + x.codice + ' · WMAC ' + x.wmac : (x.trackBy === 'mac' ? 'MAC ' : 'SN ') + x.codice)} · ${x.data}</div>
+      ${zeroTouch}
+    </div>`;
+  }).join('');
+}
+
+function rimuoviZeroTouchPossesso(idx, btn){
+  btn.textContent = 'Rimozione in corso...';
+  btn.style.pointerEvents = 'none';
+  setTimeout(()=>{
+    APPARATI_DICHIARATI[idx].configRimossa = true;
+    renderPossessoInseriti();
+  }, 900);
+}
+
+
+// ---------------------------------------------------------------------
+// RIENTRO MATERIALE GUASTO: il partner restituisce all'azienda il materiale guasto
+// ---------------------------------------------------------------------
+// TODO: indirizzo definitivo da inserire quando l'app sarà attiva (per ora quello di test)
+const EMAIL_RIENTRO_MATERIALE = TEST_EMAIL_RECIPIENT;
+const DESTINATARIO_RIENTRO = 'Marcella';
+let rientroSel = new Set(); // chiavi "tech:indice"
+
+// "Ritirato da <cliente> - Contratto <n°>" (il numero di SNA non si mostra)
+function ritiratoDa(entry){
+  if(!entry.cliente) return entry.ticket || 'cliente';
+  return entry.cliente + (entry.contratto ? ' - Contratto ' + entry.contratto : '');
+}
+
+function voceGuastoInfo(tech, entry){
+  const item = STOCK[tech].find(it => it.n === entry.type) || {};
+  const isMac = item.trackBy === 'mac';
+  const nome = (isMac ? 'Antenna ' : '') + entry.type;
+  let dato = '';
+  if(entry.code) dato = item.dualMac ? 'MAC (ESN) ' + entry.code + (WIRELESS_MAC[entry.code] ? ' / Wireless MAC ' + WIRELESS_MAC[entry.code] : '') : (isMac ? 'MAC ' : 'SN ') + entry.code;
+  else if(entry.qty) dato = '× ' + entry.qty;
+  return { nome, dato, isMac, dual: !!item.dualMac };
+}
+
+function avviaRientroGuasti(){
+  rientroSel = new Set();
+  document.getElementById('rientroForm').style.display = 'flex';
+  document.getElementById('rientroForm').style.flexDirection = 'column';
+  document.getElementById('rientroEsito').style.display = 'none';
+  goTo('screen-rientro-guasti', 0);
+  renderRientroGuasti();
+}
+
+function renderRientroGuasti(){
+  const box = document.getElementById('rientroLista');
+  let html = '';
+  let totale = 0;
+  ['fwa', 'ftth'].forEach(tech => {
+    const lista = FAULTY_STOCK[tech];
+    if(!lista.length) return;
+    html += `<div class="eyebrow" style="margin:6px 0 0;">${tech.toUpperCase()}</div>`;
+    lista.forEach((entry, i) => {
+      const key = tech + ':' + i;
+      const info = voceGuastoInfo(tech, entry);
+      const sel = rientroSel.has(key);
+      totale++;
+      html += `
+        <label class="item-row${sel ? ' sel' : ''}" style="cursor:pointer; align-items:flex-start; gap:10px;">
+          <input type="checkbox" ${sel ? 'checked' : ''} onchange="rientroToggle('${key}', this.checked)" style="width:18px; height:18px; margin-top:2px;">
+          <span style="flex:1;">
+            <span style="display:block; font-weight:700;">${info.nome}</span>
+            <span style="display:block; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8a8577; margin-top:2px;">${info.dato}${info.dato ? ' · ' : ''}ritirato da ${ritiratoDa(entry)} il ${entry.data}</span>
+          </span>
+        </label>`;
+    });
+  });
+  box.innerHTML = html || '<div class="stock-counter-only" style="padding:4px 2px;">Nessun materiale guasto da restituire.</div>';
+  document.getElementById('rientroSelTutto').checked = totale > 0 && rientroSel.size === totale;
+  const btn = document.getElementById('concludiRientroBtn');
+  btn.style.opacity = rientroSel.size ? '1' : '0.4';
+  btn.textContent = rientroSel.size ? 'Concludi rientro (' + rientroSel.size + ')' : 'Concludi rientro';
+  const err = document.getElementById('rientroErrore');
+  err.style.display = 'none';
+}
+
+function rientroToggle(key, on){
+  if(on) rientroSel.add(key); else rientroSel.delete(key);
+  renderRientroGuasti();
+}
+
+function rientroSelezionaTutto(on){
+  rientroSel = new Set();
+  if(on) ['fwa', 'ftth'].forEach(tech => FAULTY_STOCK[tech].forEach((_, i) => rientroSel.add(tech + ':' + i)));
+  renderRientroGuasti();
+}
+
+// Testo dell'email: una riga per modello, con tutti i SN/MAC di quel modello raggruppati
+function testoEmailRientro(voci){
+  const gruppi = new Map(); // nome modello -> {codici:[], qty:0, isMac, dual}
+  voci.forEach(({tech, entry}) => {
+    const info = voceGuastoInfo(tech, entry);
+    if(!gruppi.has(info.nome)) gruppi.set(info.nome, { codici: [], qty: 0, isMac: info.isMac, dual: info.dual });
+    const g = gruppi.get(info.nome);
+    if(entry.code) g.codici.push(info.dual && WIRELESS_MAC[entry.code] ? entry.code + ' / Wireless MAC ' + WIRELESS_MAC[entry.code] : entry.code);
+    else g.qty += (entry.qty || 1);
+  });
+  const righe = [];
+  gruppi.forEach((g, nome) => {
+    if(g.codici.length) righe.push('-' + nome + ' — ' + (g.dual ? 'MAC (ESN) ' : (g.isMac ? 'MAC ' : 'SN ')) + g.codici.join(', ') + ';');
+    if(g.qty) righe.push('-' + nome + ' × ' + g.qty + ';');
+  });
+  const p = loggedInPartner || {name:'', code:''};
+  const firma = p.name + ' (Codice Partner ' + p.code + ')';
+  const corpo =
+    'Il partner ' + firma + ' ha restituito il seguente materiale:\n\n' +
+    righe.join('\n') + '\n\n' +
+    'Cordiali Saluti,\n' + firma;
+  return { corpo, completo: 'Gentile ' + DESTINATARIO_RIENTRO + ',\n\n' + corpo, firma };
+}
+
+function concludiRientroGuasti(){
+  const err = document.getElementById('rientroErrore');
+  if(!rientroSel.size){
+    err.innerHTML = '<strong>⚠ Seleziona almeno un apparato da restituire.</strong>';
+    err.style.display = 'block';
+    return;
+  }
+  const voci = [];
+  ['fwa', 'ftth'].forEach(tech => FAULTY_STOCK[tech].forEach((entry, i) => {
+    if(rientroSel.has(tech + ':' + i)) voci.push({ tech, entry });
+  }));
+  const email = testoEmailRientro(voci);
+
+  if(window.emailjs){
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: EMAIL_RIENTRO_MATERIALE,
+      to_name: DESTINATARIO_RIENTRO,
+      subject: 'Rientro materiale guasto — Partner ' + (loggedInPartner ? loggedInPartner.code : ''),
+      messaggio: email.corpo,
+    }).then(
+      () => console.log('Email di rientro materiale inviata.'),
+      (e) => console.error('Errore invio email di rientro materiale:', e)
+    );
+  } else {
+    console.warn('EmailJS non disponibile: email di rientro non inviata.');
+  }
+
+  // il materiale restituito esce dal magazzino del partner
+  ['fwa', 'ftth'].forEach(tech => {
+    FAULTY_STOCK[tech] = FAULTY_STOCK[tech].filter((_, i) => !rientroSel.has(tech + ':' + i));
+  });
+  rientroSel = new Set();
+
+  document.getElementById('rientroForm').style.display = 'none';
+  document.getElementById('rientroEmailTesto').textContent = email.completo;
+  document.getElementById('rientroEsito').style.display = 'block';
+}
+
+function toggleGruppoMag(id){ document.getElementById(id).classList.toggle('open'); }
 
 function renderMagazzino(){
   const list = document.getElementById('stockList');
@@ -2165,7 +2652,9 @@ function renderMagazzino(){
   STOCK[magazzinoTech].forEach((item,i)=>{
     const card = document.createElement('div');
     card.className = 'stock-card';
-    const totalQty = item.trackBy === 'counter' ? item.qty : item.codes.length;
+    // gruppo "nuovo": esclusi i pezzi usati ritirati dai clienti
+    const nuovi = item.trackBy === 'counter' ? null : item.codes.filter(c => !USATI_INFO[c]);
+    const totalQty = item.trackBy === 'counter' ? Math.max(0, item.qty - qtyUsataContatore(magazzinoTech, item.n)) : nuovi.length;
     const codeLabel = item.trackBy === 'mac' ? 'MAC Address' : 'Serial Number';
     card.innerHTML = `
       <div class="stock-top">
@@ -2175,7 +2664,7 @@ function renderMagazzino(){
       ${item.trackBy === 'counter'
         ? `<div class="stock-counter-only">Materiale senza SN/MAC · tracciato a contatore numerico</div>`
         : `<div class="stock-codes" id="stockCodes${magazzinoTech}${i}">
-            ${item.codes.map((c,ci)=>`<div class="stock-code-row"><span class="idx">${codeLabel} ${ci+1}</span><span>${c}</span></div>`).join('')}
+            ${nuovi.length ? '' : '<div class="stock-counter-only">Nessun pezzo nuovo.</div>'}${nuovi.map((c,ci)=>`<div class="stock-code-row"><span class="idx">${item.dualMac ? 'Antenna ' + (ci+1) : codeLabel + ' ' + (ci+1)}</span><span style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">${item.dualMac ? `<span>ESN ${c}</span><span>WMAC ${WIRELESS_MAC[c] || '—'}</span>` : `<span>${c}</span>`}${CODICI_DICHIARATI.has(c) ? '<span class="badge" style="background:var(--petrol); color:var(--white); font-size:9px; padding:1px 6px; white-space:nowrap;">GIÀ IN POSSESSO</span>' : ''}</span></div>`).join('')}
           </div>`
       }
     `;
@@ -2187,26 +2676,61 @@ function renderMagazzino(){
     list.appendChild(card);
   });
 
+  // gruppo "usato funzionante": pezzi usati rimessi a magazzino + router Zyxel rientrati usati
   const usatiList = document.getElementById('zyxelUsatiList');
   if(usatiList){
-    usatiList.innerHTML = MODELLI_ZYXEL_USATI.map((modello, k) => {
+    const gruppi = []; // {nome, righe:[{dato, meta}], pz}
+    STOCK[magazzinoTech].forEach(item => {
+      if(item.trackBy === 'counter'){
+        const lista = USATI_QTY[magazzinoTech][item.n] || [];
+        const pz = lista.reduce((a, x) => a + x.qty, 0);
+        if(pz) gruppi.push({ nome: item.n, pz, righe: lista.map(x => ({ dato: '× ' + x.qty, meta: x })) });
+      } else {
+        const usati = item.codes.filter(c => USATI_INFO[c]);
+        const lab = item.trackBy === 'mac' ? (item.dualMac ? 'MAC (ESN) ' : 'MAC ') : 'SN ';
+        if(usati.length) gruppi.push({ nome: item.n, pz: usati.length, righe: usati.map(c => ({ dato: lab + c, meta: USATI_INFO[c] })) });
+      }
+    });
+    MODELLI_ZYXEL_USATI.forEach(modello => {
       const area = ZYXEL_USATI[magazzinoTech][modello];
-      return `
-        <div class="stock-card" style="border-color:var(--petrol); background:var(--petrol-dim);" onclick="document.getElementById('zyxUsati${k}').classList.toggle('open')">
+      if(!area.length) return;
+      const g = gruppi.find(x => x.nome === modello);
+      const righe = area.map(x => ({ dato: 'SN ' + x.code, meta: x }));
+      if(g){ g.righe.push(...righe); g.pz += area.length; } else gruppi.push({ nome: modello, pz: area.length, righe });
+    });
+    usatiList.innerHTML = gruppi.length ? gruppi.map((g, k) => `
+        <div class="stock-card" style="border-color:var(--petrol); background:var(--petrol-dim);" onclick="document.getElementById('usati${k}').classList.toggle('open')">
           <div class="stock-top">
-            <div class="stock-name">${modello}</div>
+            <div class="stock-name">${g.nome}</div>
             <div style="display:flex; gap:6px; align-items:center;">
               <span class="badge" style="background:var(--petrol); color:var(--white);">USATO</span>
-              <div class="stock-qty">${area.length} pz</div>
+              <div class="stock-qty">${g.pz} pz</div>
             </div>
           </div>
-          ${area.length
-            ? `<div class="stock-codes" id="zyxUsati${k}">${area.map((x,ci) => `<div class="stock-code-row"><span class="idx">Serial Number ${ci+1}</span><span>${x.code}</span></div><div class="stock-counter-only" style="margin:-2px 0 4px 2px;">Rientrato da ${x.ticket} il ${x.data}</div>`).join('')}</div>`
-            : `<div class="stock-counter-only" id="zyxUsati${k}">Nessun router rientrato.</div>`}
-        </div>`;
-    }).join('');
+          <div class="stock-codes" id="usati${k}">${g.righe.map(r => `<div class="stock-code-row"><span>${r.dato}</span></div><div class="stock-counter-only" style="margin:-2px 0 4px 2px;">Ritirato da ${ritiratoDa(r.meta)} il ${r.meta.data}</div>`).join('')}</div>
+        </div>`).join('')
+      : `<div class="stock-counter-only" style="padding:4px 2px;">Nessun materiale usato.</div>`;
   }
 
+  // contatori dei tre gruppi
+  {
+    const t = magazzinoTech;
+    let nNuovo = 0, nUsato = 0, nGuasto = 0;
+    STOCK[t].forEach(item => {
+      if(item.trackBy === 'counter'){ const u = qtyUsataContatore(t, item.n); nUsato += u; nNuovo += Math.max(0, item.qty - u); }
+      else { item.codes.forEach(c => { if(USATI_INFO[c]) nUsato++; else nNuovo++; }); }
+    });
+    FAULTY_STOCK[t].forEach(e => nGuasto += (e.qty || 1));
+    document.getElementById('cntNuovo').textContent = nNuovo + ' pz';
+    document.getElementById('cntUsato').textContent = nUsato + ' pz';
+    document.getElementById('cntGuasto').textContent = nGuasto + ' pz';
+  }
+  const rientroBtn = document.getElementById('avviaRientroBtn');
+  if(rientroBtn){
+    const nGuasti = FAULTY_STOCK.fwa.length + FAULTY_STOCK.ftth.length;
+    rientroBtn.style.opacity = nGuasti ? '1' : '0.4';
+    rientroBtn.style.pointerEvents = nGuasti ? 'auto' : 'none';
+  }
   const faultyList = document.getElementById('faultyStockList');
   if(faultyList){
     const items = FAULTY_STOCK[magazzinoTech];
@@ -2220,7 +2744,7 @@ function renderMagazzino(){
             <span class="badge ftth" style="background:var(--orange); color:var(--white);">GUASTO</span>
           </div>
           <div class="stock-counter-only">
-            ${entry.qty && entry.qty > 1 ? '× ' + entry.qty + ' · ' : ''}${entry.code ? 'Codice: ' + entry.code + ' · ' : ''}Ritirato da ${entry.ticket} il ${entry.data}
+            ${entry.qty && entry.qty > 1 ? '× ' + entry.qty + ' · ' : ''}${entry.code ? 'Codice: ' + entry.code + ' · ' : ''}Ritirato da ${ritiratoDa(entry)} il ${entry.data}
           </div>
         </div>
       `).join('');
@@ -2236,14 +2760,14 @@ const DISINSTALLAZIONI = [
     // Materiale installato presso il cliente, come risulta dalla commessa nel gestionale (Sibiz)
     commessa: [
       {n:'SM450b HG',              codice:'A42B8F11C034'},
-      {n:'Router Zyxel EX3501-T0', codice:'ZX35017730'},
+      {n:'Router Zyxel EX3501-T0', codice:'S250Y11017730'},
       {n:'Alimentatori POE',       qty:1},
     ]},
   {id:'DISN-5534', tech:'ftth', client:'Giulia Amenta', address:'Via Tisia 34, Siracusa', contratto:'2023F00287', motivoBreve:'Migrazione altro operatore', stato:'aperta', email:'andrearapisarda1995@libero.it',
     istruzioni: "Disinstallare e ritirare: ONT Huawei e router Zyxel EX3501-T0.",
     commessa: [
-      {n:'ONT Huawei GPON',        codice:'HW-GP-76190'},
-      {n:'Router Zyxel EX3501-T0', codice:'ZX35016642'},
+      {n:'ONT Huawei GPON',        codice:'48575443DD076190'},
+      {n:'Router Zyxel EX3501-T0', codice:'S250Y11016642'},
     ]},
 ];
 let currentDisinstallazioneId = null;
@@ -2447,7 +2971,10 @@ function renderDisinstallazioneItems(){
     else if(item.trackBy === 'sn') dato = 'SN ' + st.codice;
     else dato = 'Quantità: ' + st.qty;
 
-    const guastoCheckbox = `
+    if(RE_POE.test(item.n)) st.guasto = true; // POE ritirato: sempre guasto
+    const guastoCheckbox = RE_POE.test(item.n)
+      ? `<div style="margin-top:8px; font-size:12px; color:#8a3a17;">🔒 Guasto — i POE ritirati non si riutilizzano e vanno tra il materiale guasto.</div>`
+      : `
       <label style="display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:#8a3a17; cursor:pointer; text-transform:none; letter-spacing:0; font-family:inherit; font-weight:400;" onclick="event.stopPropagation();">
         <input type="checkbox" ${st.guasto ? 'checked' : ''} onchange="disinstItemState['${key}'].guasto=this.checked">
         Apparato guasto (non rientra nel magazzino utilizzabile)
@@ -2611,26 +3138,28 @@ function confirmDisinstallazione(){
 
     if(item.trackBy === 'counter'){
       if(st.guasto){
-        FAULTY_STOCK[d.tech].push({ type: item.n, code: null, qty: st.qty, ticket: currentDisinstallazioneId, data: fmtDateIt(todayIso()) });
+        FAULTY_STOCK[d.tech].push({ type: item.n, code: null, qty: st.qty, ticket: currentDisinstallazioneId, cliente: d.client, contratto: d.contratto, data: fmtDateIt(todayIso()) });
         recapRows.push(`<div><span class="ok">✓</span>${item.n} × ${st.qty} registrato come <strong>guasto</strong></div>`);
       } else {
         item.qty += st.qty;
-        recapRows.push(`<div><span class="ok">✓</span>${item.n} × ${st.qty} rientrato in magazzino</div>`);
+        registraUsato(d.tech, item.n, null, st.qty, d.client, d.contratto);
+        recapRows.push(`<div><span class="ok">✓</span>${item.n} × ${st.qty} rientrato tra il <strong>materiale usato</strong></div>`);
       }
     } else if(st.codice.trim()){
       const configNote = (item.trackBy === 'mac' && st.configRimossa) ? ' · configurazione rimossa' : '';
       if(st.guasto){
-        FAULTY_STOCK[d.tech].push({ type: item.n, code: st.codice.trim(), ticket: currentDisinstallazioneId, data: fmtDateIt(todayIso()) });
+        FAULTY_STOCK[d.tech].push({ type: item.n, code: st.codice.trim(), ticket: currentDisinstallazioneId, cliente: d.client, contratto: d.contratto, data: fmtDateIt(todayIso()) });
         recapRows.push(`<div><span class="ok">✓</span>${item.n} (${st.codice.trim()}) registrato come <strong>guasto</strong>${configNote}</div>`);
       } else {
-        if(registraZyxelUsato(d.tech, item.n, st.codice.trim(), currentDisinstallazioneId)){
+        if(registraZyxelUsato(d.tech, item.n, st.codice.trim(), currentDisinstallazioneId, d.client, d.contratto)){
           recapRows.push(`<div><span class="ok">✓</span>${item.n} (${st.codice.trim()}) rientrato tra i <strong>router usati</strong></div>`);
           return;
         }
         const codiceMag = (item.trackBy === 'mac' && /^[0-9A-Fa-f]{12}$/.test(st.codice.trim()))
           ? st.codice.trim().toUpperCase().match(/.{2}/g).join(':') : st.codice.trim();
         if(!item.codes.includes(codiceMag)) item.codes.push(codiceMag);
-        recapRows.push(`<div><span class="ok">✓</span>${item.n} (${st.codice.trim()}) rientrato in magazzino${configNote}</div>`);
+        registraUsato(d.tech, item.n, codiceMag, null, d.client, d.contratto);
+        recapRows.push(`<div><span class="ok">✓</span>${item.n} (${st.codice.trim()}) rientrato tra il <strong>materiale usato</strong>${configNote}</div>`);
       }
     }
   });
@@ -2860,7 +3389,7 @@ function renderMateriali(){
           ${item.codes.map(c => `
             <label style="display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--paper-dim); border-radius:6px; padding:7px 10px; cursor:pointer;">
               <input type="checkbox" ${st.selected.includes(c) ? 'checked' : ''} onchange="toggleUsedCode('${key}','${c}')">
-              <span>${codeLabel} ${c}</span>
+              <span>${item.dualMac ? 'ESN ' + c + ' · WMAC ' + (WIRELESS_MAC[c] || '—') : codeLabel + ' ' + c}${USATI_INFO[c] ? ' <span class="badge" style="background:var(--petrol); color:var(--white); font-size:9px; padding:1px 6px;">USATO</span>' : ''}</span>
             </label>
           `).join('')}
         </div>
@@ -2900,6 +3429,12 @@ function ritiroVisibile(v){
   return voceCausaSelezionata(VOCE_RITIRO_HUAWEI) && RE_ROUTER_HUAWEI.test(v.n);
 }
 
+// POE: un alimentatore ritirato dal cliente (funzionante o no) NON si riutilizza mai -> sempre GUASTO.
+// Se in Diagnosi è indicata una sostituzione del POE, il POE ritirato è per forza guasto e bloccato.
+const RE_POE = /POE/i;
+const VOCI_SOSTITUZIONE_POE = ['Sostituzione POE', 'Rifacimento plug e sostituzione del POE', 'Sostituzione Patch POE-Router'];
+function poeSostituito(){ return techSelected === 'fwa' && VOCI_SOSTITUZIONE_POE.some(voceCausaSelezionata); }
+
 function renderRitiroCommessa(){
   const list = document.getElementById('ritiroCommessaList');
   const section = document.getElementById('ritiroCommessaSection');
@@ -2910,6 +3445,12 @@ function renderRitiroCommessa(){
   let cambiato = false;
   tutta.forEach((v, i) => { if(!ritiroVisibile(v) && ritiroCommessaState[i] && ritiroCommessaState[i] !== 'no'){ ritiroCommessaState[i] = 'no'; cambiato = true; } });
   tutta.forEach((v, i) => { if(techSelected === 'ftth' && ritiroVisibile(v) && !ritiroCommessaState[i]){ ritiroCommessaState[i] = 'ok'; cambiato = true; } });
+  // POE: mai "funzionante"; con sostituzione del POE in Diagnosi -> guasto obbligatorio
+  tutta.forEach((v, i) => {
+    if(!RE_POE.test(v.n)) return;
+    const voluto = poeSostituito() ? 'guasto' : (ritiroCommessaState[i] === 'ok' ? 'guasto' : ritiroCommessaState[i]);
+    if(voluto !== ritiroCommessaState[i]){ ritiroCommessaState[i] = voluto; cambiato = true; }
+  });
   if(cambiato) ricalcolaRitirati();
   const commessa = tutta.map((v, idx) => ({v, idx})).filter(x => ritiroVisibile(x.v));
   if(section) section.style.display = (techSelected === 'ftth' && !commessa.length) ? 'none' : '';
@@ -2928,14 +3469,31 @@ function renderRitiroCommessa(){
         <div class="stock-top"><div class="stock-name">${v.n}</div></div>
         <div style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#3b382f;">${dato}</div>
         <div style="font-size:11px; color:#8a8577; margin:2px 0 8px;">Da commessa</div>
-        <div class="tech-pick" style="grid-template-columns:1fr 1fr 1fr;">
-          ${opt('no', 'Non ritirato')}${opt('ok', 'Funzionante')}${opt('guasto', 'Guasto')}
-        </div>
+        ${RE_POE.test(v.n) && poeSostituito()
+          ? `<div class="tech-pick" style="grid-template-columns:1fr 1fr 1fr; pointer-events:none;">
+               <div class="tech-opt" style="padding:9px 4px; font-size:12.5px; opacity:.35;">Non ritirato</div>
+               <div class="tech-opt" style="padding:9px 4px; font-size:12.5px; opacity:.35;">Funzionante</div>
+               <div class="tech-opt sel" style="padding:9px 4px; font-size:12.5px; border-color:var(--orange); color:var(--orange);">🔒 Guasto</div>
+             </div>
+             <div style="font-size:11.5px; color:#8a3a17; margin-top:6px;">POE sostituito in Diagnosi: quello ritirato risulta guasto e non è modificabile.</div>`
+          : RE_POE.test(v.n)
+          ? `<div class="tech-pick" style="grid-template-columns:1fr 1fr 1fr;">
+               ${opt('no', 'Non ritirato')}<div class="tech-opt" style="padding:9px 4px; font-size:12.5px; opacity:.35; pointer-events:none;">Funzionante</div>${opt('guasto', 'Guasto')}
+             </div>
+             <div style="font-size:11.5px; color:#8a8577; margin-top:6px;">I POE ritirati non si riutilizzano: se ritirato va tra il materiale guasto.</div>`
+          : `<div class="tech-pick" style="grid-template-columns:1fr 1fr 1fr;">
+               ${opt('no', 'Non ritirato')}${opt('ok', 'Funzionante')}${opt('guasto', 'Guasto')}
+             </div>`}
       </div>`;
   }).join('');
 }
 
 function setRitiroCommessa(idx, stato){
+  const v = ((TICKETS[currentTicketId] || {}).commessa || [])[idx];
+  if(v && RE_POE.test(v.n)){
+    if(poeSostituito()) return;           // bloccato su guasto
+    if(stato === 'ok') stato = 'guasto';  // un POE ritirato è sempre guasto
+  }
   ritiroCommessaState[idx] = stato;
   ricalcolaRitirati();
   renderRitiroCommessa();
@@ -2949,7 +3507,7 @@ function ricalcolaRitirati(){
     const st = ritiroCommessaState[i];
     if(!st || st === 'no') return;
     const entry = v.qty ? { type: v.n, qty: v.qty } : { type: v.n, code: v.codice };
-    if(st === 'ok') retrievedOk.push(entry); else retrievedFaulty.push(entry);
+    if(st === 'ok' && !RE_POE.test(v.n)) retrievedOk.push(entry); else retrievedFaulty.push(entry);
   });
 }
 
@@ -2965,24 +3523,29 @@ function applyMagazzinoMovements(){
     if(!st) return;
     if((item.trackBy === 'counter' && st.qty > 0) || (st.selected && st.selected.length)) magazzinoAggiornatoSNA = true;
     if(item.trackBy === 'counter'){
+      allineaUsatiContatore(tech, item, Math.min(st.qty, item.qty));
       item.qty = Math.max(0, item.qty - st.qty);
       st.qty = 0;
     } else {
       if(st.selected.length) materialiScaricatiSNA.push({ n:item.n, codes:[...st.selected], mode: st.mode });
+      st.selected.forEach(c => { delete USATI_INFO[c]; });
       item.codes = item.codes.filter(c => !st.selected.includes(c));
       st.selected = [];
     }
   });
 
   // 2) Carico del materiale ritirato funzionante: torna disponibile nel magazzino
+  const tk = TICKETS[currentTicketId] || {};
   retrievedOk.forEach(entry=>{
-    if(registraZyxelUsato(tech, entry.type, entry.code, currentTicketId)) return;
+    if(registraZyxelUsato(tech, entry.type, entry.code, currentTicketId, tk.client, tk.contract)) return;
     const item = STOCK[tech].find(it => it.n === entry.type);
     if(!item) return;
     if(item.trackBy === 'counter'){
       item.qty += (entry.qty || 1);
+      registraUsato(tech, item.n, null, entry.qty || 1, tk.client, tk.contract);
     } else if(entry.code){
       if(!item.codes.includes(entry.code)) item.codes.push(entry.code);
+      registraUsato(tech, item.n, entry.code, null, tk.client, tk.contract);
     }
   });
   retrievedOk = [];
@@ -2994,6 +3557,8 @@ function applyMagazzinoMovements(){
       code: entry.code || null,
       qty: entry.qty || null,
       ticket: currentTicketId,
+      cliente: (TICKETS[currentTicketId] || {}).client || '',
+      contratto: (TICKETS[currentTicketId] || {}).contract || '',
       data: fmtDateIt(todayIso())
     });
   });
@@ -3167,6 +3732,7 @@ const DEVICES = {
   ftth: [
     {n:'Router Zyxel EX3501', privato:{nol:4.02, acq:79.00}, azienda:{nol:4.90, acq:79.00}},
     {n:'Router Zyxel EX3301', privato:{nol:4.02, acq:79.00}, azienda:{nol:4.90, acq:79.00}},
+    {n:'Router Zyxel DX3301', privato:{nol:4.91, acq:99.00}, azienda:{nol:5.99, acq:99.00}}, // prezzi dal modulo FWA (in FTTH va comunque in garanzia)
     {n:'ONT Huawei Echolife', privato:{nol:2.27, acq:40.98}, azienda:{nol:2.79, acq:40.98}},
     {n:'ONT Huawei GPON', privato:{nol:2.27, acq:40.98}, azienda:{nol:2.79, acq:40.98}},
     {n:'ONT Huawei XGPON', privato:{nol:3.50, acq:55.00}, azienda:{nol:4.20, acq:55.00}},
@@ -3303,6 +3869,7 @@ const DEVICE_STOCK_MAP = {
   fwa: {
     'Router Zyxel EX3501': 'Router Zyxel EX3501-T0',
     'Router Zyxel EX3301': 'Router Zyxel EX3301-T0',
+    'Router Zyxel DX3301': 'Router Zyxel DX3301-T0',
     'Router WiFi Fritz!Box 7530': 'Fritzbox 7530',
     'Router WiFi Fritz!Box 7530 AX': 'Fritzbox 7530 AX',
     'Router Fritz!Box 7590': 'Fritzbox 7590',
@@ -3311,6 +3878,7 @@ const DEVICE_STOCK_MAP = {
   ftth: {
     'Router Zyxel EX3501': 'Router Zyxel EX3501-T0',
     'Router Zyxel EX3301': 'Router Zyxel EX3301-T0',
+    'Router Zyxel DX3301': 'Router Zyxel DX3301-T0',
     'ONT Huawei GPON': 'ONT Huawei GPON',
     'ONT Huawei XGPON': 'ONT Huawei XGPON',
     'Router Huawei GPON': 'Router Huawei GPON',
@@ -3478,6 +4046,8 @@ function showScreen(id){
 const titles = {
   'screen-list': ['Ticket assegnati','4 interventi oggi'],
   'screen-magazzino': ['Magazzino personale','Materiale disponibile'],
+  'screen-apparati-possesso': ['Magazzino personale','Apparati già in possesso'],
+  'screen-rientro-guasti': ['Magazzino personale','Rientro materiale guasto'],
   'screen-disinstallazioni': ['Disinstallazioni','Attività assegnate'],
   'screen-disinstallazione-detail': ['Disinstallazione','Dettaglio attività'],
   'screen-disinstallazione-materiali': ['Disinstallazione','Materiale e chiusura'],
@@ -3510,7 +4080,7 @@ function updateTop(id){
   const isTabRoot = (id==='screen-list'||id==='screen-magazzino'||id==='screen-disinstallazioni');
   const isFinalScreen = (id==='screen-chiusura-finale'||id==='screen-disinstallazione-finale'||id==='screen-sna-annullata');
   document.getElementById('backBtn').classList.toggle('show', !isTabRoot && !isFinalScreen);
-  document.getElementById('trail').style.display = (isTabRoot||id==='screen-detail'||id==='screen-diagnosi'||id==='screen-chiusura-finale'||id==='screen-disinstallazione-detail'||id==='screen-disinstallazione-materiali'||id==='screen-disinstallazione-otp'||id==='screen-disinstallazione-finale'||id==='screen-sna-annullata') ? 'none':'flex';
+  document.getElementById('trail').style.display = (isTabRoot||id==='screen-apparati-possesso'||id==='screen-rientro-guasti'||id==='screen-detail'||id==='screen-diagnosi'||id==='screen-chiusura-finale'||id==='screen-disinstallazione-detail'||id==='screen-disinstallazione-materiali'||id==='screen-disinstallazione-otp'||id==='screen-disinstallazione-finale'||id==='screen-sna-annullata') ? 'none':'flex';
   document.getElementById('bottomBar').style.display = (id==='screen-chiusura-finale'||id==='screen-sna-annullata') ? 'block':'none';
   document.getElementById('tabBar').style.display = isTabRoot ? 'flex':'none';
   document.getElementById('logoutBtn').classList.toggle('show', isTabRoot);
@@ -3540,7 +4110,7 @@ const TICKETS = {
     // Apparati installati presso il cliente, come risultano dalla commessa nel gestionale (Sibiz)
     commessa: [
       {n:'SM450b HG',              codice:'A4:2B:8F:11:B7:02'},
-      {n:'Router Zyxel EX3501-T0', codice:'ZX35015208'},
+      {n:'Router Zyxel EX3501-T0', codice:'S250Y11015208'},
       {n:'Alimentatori POE',       qty:1},
     ],
   },
@@ -3558,7 +4128,7 @@ const TICKETS = {
     fatturaRouterNoleggio: false,
     // Apparati installati presso il cliente, come risultano dalla commessa nel gestionale (Sibiz)
     commessa: [
-      {n:'Router Huawei GPON',     codice:'HW-RG-80457'},
+      {n:'Router Huawei GPON',     codice:'4857544383A80457'},
     ],
   },
   'SNA-88245': {
@@ -3576,7 +4146,7 @@ const TICKETS = {
     // Apparati installati presso il cliente, come risultano dalla commessa nel gestionale (Sibiz)
     commessa: [
       {n:'SM450b MG',              codice:'A4:2B:8F:22:C4:51'},
-      {n:'Router Zyxel EX3301-T0', codice:'ZX33014409'},
+      {n:'Router Zyxel EX3301-T0', codice:'S230Y11014409'},
       {n:'Alimentatori POE',       qty:1},
     ],
   },
@@ -3703,6 +4273,10 @@ function goBack(){
     const prev = history[history.length-1];
     showScreen(prev);
     updateTop(prev);
+    if(prev === 'screen-magazzino'){
+      document.getElementById('topSub').textContent = loggedInPartner ? loggedInPartner.name : '';
+      renderMagazzino();
+    }
   }
 }
 
@@ -4238,7 +4812,7 @@ function validateDiagnosi(){
 }
 
 // sync schermate dipendenti dal modulo costi
-const BUILD_VERSION = 'build-2026-09-29-risolto-monitorare';
+const BUILD_VERSION = 'build-2026-09-30-poe-sempre-guasto';
 console.log('%c[SNA APP] Versione caricata: ' + BUILD_VERSION, 'background:#ff5a1f; color:#fff; padding:3px 8px; border-radius:4px; font-weight:bold;');
 document.addEventListener('DOMContentLoaded', ()=>{
   renderCosti();
