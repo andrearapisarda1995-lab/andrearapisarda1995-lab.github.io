@@ -967,6 +967,11 @@
 
     <div class="note-flag" id="disinstApptNote" style="display:none;"></div>
 
+    <div class="field" id="disinstApptHistoryWrap" style="display:none;">
+      <label>Storico modifiche appuntamento</label>
+      <div id="disinstApptHistoryList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+
     <div class="spacer"></div>
     <button class="btn btn-primary" id="disinstStartBtn" style="opacity:0.4; pointer-events:none;" onclick="avviaDisinstallazione()">Avvia disinstallazione →</button>
   </div>
@@ -2829,6 +2834,25 @@ function openDisinstallazione(id){
   document.getElementById('disinstApptConfirmBtn').style.pointerEvents = 'none';
   document.getElementById('disinstApptEditBtn').style.opacity = '0.4';
   document.getElementById('disinstApptEditBtn').style.pointerEvents = 'none';
+  disinstApptHistory = [];
+  if(d.apptSalvato){
+    // ripristino l'appuntamento già confermato per questa disinstallazione (con il suo storico)
+    document.getElementById('disinstApptDate').value = d.apptSalvato.data;
+    document.getElementById('disinstApptDate').disabled = true;
+    document.getElementById('disinstApptTime').value = d.apptSalvato.ora;
+    const disp = document.getElementById('disinstApptTimeDisplay');
+    disp.classList.remove('placeholder');
+    disp.innerHTML = '<span>' + d.apptSalvato.ora + '</span><span>🕐</span>';
+    lockTimeDisplay('disinstApptTimeDisplay', true);
+    const note = document.getElementById('disinstApptNote');
+    note.style.display = 'block';
+    note.innerHTML = d.apptSalvato.noteHtml;
+    document.getElementById('disinstApptEditBtn').style.opacity = '1';
+    document.getElementById('disinstApptEditBtn').style.pointerEvents = 'auto';
+    disinstApptEverConfirmed = true;
+    disinstApptHistory = d.apptSalvato.history.slice();
+  }
+  renderDisinstApptHistory();
   updateDisinstStartButton();
 
   history = ['screen-disinstallazioni','screen-disinstallazione-detail'];
@@ -4372,15 +4396,16 @@ function resetApp(){
 let apptEverConfirmed = false;
 let apptHistory = [];
 
-function renderApptHistory(){
-  const wrap = document.getElementById('apptHistoryWrap');
-  const list = document.getElementById('apptHistoryList');
-  if(apptHistory.length === 0){
+function renderApptHistory(storico, wrapId, listId){
+  const voci = storico || apptHistory;
+  const wrap = document.getElementById(wrapId || 'apptHistoryWrap');
+  const list = document.getElementById(listId || 'apptHistoryList');
+  if(voci.length === 0){
     wrap.style.display = 'none';
     return;
   }
   wrap.style.display = 'flex';
-  list.innerHTML = apptHistory.slice().reverse().map((h, i) => {
+  list.innerHTML = voci.slice().reverse().map((h, i) => {
     const isLatest = i === 0;
     return `
       <div class="stock-code-row" style="flex-direction:column; align-items:flex-start; gap:2px; ${isLatest ? 'border:1.5px solid var(--orange); background:var(--orange-dim);' : 'opacity:0.7;'}">
@@ -4492,6 +4517,8 @@ function validateAppuntamento(){
 }
 
 let disinstApptEverConfirmed = false;
+let disinstApptHistory = [];
+function renderDisinstApptHistory(){ renderApptHistory(disinstApptHistory, 'disinstApptHistoryWrap', 'disinstApptHistoryList'); }
 
 function validateDisinstApptDate(){
   const input = document.getElementById('disinstApptDate');
@@ -4547,8 +4574,17 @@ function confirmDisinstAppointment(){
   editBtn.style.opacity = '1';
   editBtn.style.pointerEvents = 'auto';
 
+  const now = new Date();
+  const timestamp = now.toLocaleDateString('it-IT') + ' alle ' + now.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+  disinstApptHistory.push({ data: d, ora: t, timestamp });
+  renderDisinstApptHistory();
+
   disinstApptEverConfirmed = true;
   updateDisinstStartButton();
+
+  // salvo sulla disinstallazione, così riaprendola appuntamento e storico restano
+  const dis = DISINSTALLAZIONI.find(x => x.id === currentDisinstallazioneId);
+  if(dis) dis.apptSalvato = { data: d, ora: t, history: disinstApptHistory.slice(), noteHtml: note.innerHTML };
 }
 
 function editDisinstAppointment(){
@@ -4812,7 +4848,7 @@ function validateDiagnosi(){
 }
 
 // sync schermate dipendenti dal modulo costi
-const BUILD_VERSION = 'build-2026-09-30-poe-sempre-guasto';
+const BUILD_VERSION = 'build-2026-10-01-storico-appt-disinst';
 console.log('%c[SNA APP] Versione caricata: ' + BUILD_VERSION, 'background:#ff5a1f; color:#fff; padding:3px 8px; border-radius:4px; font-weight:bold;');
 document.addEventListener('DOMContentLoaded', ()=>{
   renderCosti();
