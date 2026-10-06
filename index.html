@@ -1682,6 +1682,174 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
     </div>
   </div>
 
+  <!-- Installazioni FWA / phase 1: mock assignments, shared inventory, simulated telemetry. -->
+  <section class="screen fwa-install" id="screen-installazioni-fwa" aria-labelledby="fwaAreaTitle">
+  <div class="fwa-section-heading">
+    <div class="fwa-compact-heading"><h1 id="fwaAreaTitle">Attività assegnate</h1><span class="fwa-demo-pill">FITTIZIE</span></div>
+    <p id="fwaAssignedPartner">Nuove attivazioni con antenna.</p>
+  </div>
+  <div class="fwa-activity-note" role="note">Clienti e contratti fittizi. Apri un'attività per provarla. I dati Sibiz sono simulati.</div>
+  <div class="fwa-activity-filters" aria-label="Filtra attività">
+    <button type="button" data-fwa-filter="all" aria-pressed="true">Tutte <b id="fwaCountAll">4</b></button>
+    <button type="button" data-fwa-filter="new" aria-pressed="false">Da iniziare <b id="fwaCountNew">4</b></button>
+    <button type="button" data-fwa-filter="working" aria-pressed="false">In corso <b id="fwaCountWorking">0</b></button>
+    <button type="button" data-fwa-filter="done" aria-pressed="false">Completate <b id="fwaCountDone">0</b></button>
+  </div>
+  <div class="fwa-list-caption"><h2>Elenco installazioni</h2><span id="fwaOrderCount" role="status">4 attività</span></div>
+  <div class="fwa-order-list" id="fwaOrderList"></div>
+  <p class="fwa-form-foot">Le attivit&agrave; si completano solo in questa sessione di prova. Nessuna attivazione reale, scarico di magazzino o email.</p>
+</section>
+<section class="screen fwa-install" id="screen-installazioni-fwa-dettaglio" aria-labelledby="fwaDetailTitle">
+  <div class="fwa-step-line"><span class="fwa-step-active">01 Attività</span><span>02 Parametri</span><span>03 Allineamento</span></div>
+  <div class="fwa-compact-heading"><h1 id="fwaDetailTitle">Dettaglio installazione</h1><span class="fwa-demo-pill">FITTIZIA</span></div>
+  <div class="fwa-activity-client">
+    <div class="fwa-order-header"><span id="fwaDetailId"></span><em id="fwaDetailStatus"></em></div>
+    <h2 id="fwaDetailClient"></h2><p id="fwaDetailContract"></p><p id="fwaDetailAddress"></p>
+  </div>
+  <dl class="fwa-detail-grid">
+    <div><dt>Indicazioni di installazione</dt><dd id="fwaDetailType"></dd></div>
+    <div><dt>Partner assegnato</dt><dd id="fwaDetailPartner"></dd></div>
+    <div><dt>Cluster assegnato <span class="fwa-origin">Sibiz simulato</span></dt><dd id="fwaDetailCluster"></dd></div>
+    <div><dt>Nodi selezionabili</dt><dd id="fwaDetailNodes"></dd></div>
+  </dl>
+  <section class="fwa-operator-note" aria-labelledby="fwaOperatorTitle">
+    <div class="fwa-operator-head"><h2 id="fwaOperatorTitle">Testo dell'operatore</h2><span class="fwa-origin">Sibiz &middot; demo</span></div>
+    <p id="fwaOperatorText"></p><small>Indicazioni della commessa &middot; non modificabili dal tecnico.</small>
+  </section>
+  <button class="fwa-primary" id="fwaStartActivity" type="button">Avvia installazione →</button>
+  <div class="fwa-scenario"><strong id="fwaDetailScenario"></strong><p>Questo modello serve per provare il percorso. Puoi comunque scegliere una qualsiasi delle quattro antenne disponibili.</p></div>
+  <div class="fwa-activity-checklist">
+    <span><b>1</b>Scegli antenna e MAC dal magazzino</span>
+    <span><b>2</b>Scegli il nodo del cluster assegnato</span>
+    <span><b>3</b>Termina l'allineamento e premi Continua</span>
+    <span><b>4</b><span id="fwaRouterStepDescription">Scegli router e SN dal magazzino</span></span>
+    <span><b>5</b>Controlla il resoconto e termina l'installazione</span>
+  </div>
+  <p class="fwa-form-foot" id="fwaActivityNote">La procedura non configura apparati reali. La bozza rimane separata per questa attività durante la sessione.</p>
+</section>
+
+
+  <section class="screen fwa-install" id="screen-installazioni-fwa-parametri" aria-labelledby="fwaParamsTitle">
+    <div class="fwa-step-line"><span>01 Attività</span><span class="fwa-step-active">02 Parametri</span><span>03 Allineamento</span></div>
+    <div class="fwa-compact-heading"><h1 id="fwaParamsTitle">Prepara l'antenna</h1><span class="fwa-demo-pill">DEMO</span></div>
+    <div class="fwa-context"><strong id="fwaOrderLabel"></strong><span id="fwaOrderRef"></span><span id="fwaOrderAddress"></span><span class="fwa-context-scenario" id="fwaParamScenario"></span></div>
+    <form id="fwaParamsForm" novalidate>
+      <div class="fwa-field">
+        <label for="fwaAntenna"><span>01</span>Tipo di antenna</label>
+        <select id="fwaAntenna" required aria-describedby="fwaModelHelp"><option value="">Seleziona il modello</option></select>
+        <small id="fwaModelHelp">I MAC disponibili dipendono dal modello scelto.</small>
+      </div>
+      <div class="fwa-field">
+        <label for="fwaMac"><span>02</span>MAC antenna</label>
+        <select id="fwaMac" required disabled aria-describedby="fwaMacHelp"><option value="">Seleziona prima l'antenna</option></select>
+        <small id="fwaMacHelp">Dal magazzino dell'app. Nessun inserimento libero.</small>
+        <div id="fwaWireless" class="fwa-wireless" hidden></div>
+      </div>
+      <div class="fwa-field">
+        <label for="fwaCluster"><span>03</span>Cluster <em>Da Sibiz &middot; demo</em></label>
+        <input id="fwaCluster" type="text" readonly aria-readonly="true" aria-describedby="fwaClusterHelp" autocomplete="off">
+        <small id="fwaClusterHelp">Predefinito sull'attività; non modificabile dal tecnico.</small>
+      </div>
+      <div class="fwa-field">
+        <label for="fwaNode"><span>04</span>Nodo</label>
+        <select id="fwaNode" required aria-describedby="fwaNodeHelp"><option value="">Seleziona il nodo</option></select>
+        <small id="fwaNodeHelp">Solo i nodi del cluster assegnato.</small>
+      </div>
+      <div id="fwaParamError" class="fwa-error" role="alert" hidden></div>
+      <button type="submit" id="fwaToAlignment" class="fwa-primary" disabled>Apri allineamento <span aria-hidden="true">&rarr;</span></button>
+      <p id="fwaParamProgress" class="fwa-form-foot">Completa i parametri per continuare.</p>
+    </form>
+  </section>
+
+  <section class="screen fwa-install" id="screen-installazioni-fwa-allineamento" aria-labelledby="fwaAlignmentTitle">
+    <div class="fwa-step-line"><span>01 Attività</span><span>02 Parametri</span><span class="fwa-step-active">03 Allineamento</span></div>
+    <div class="fwa-compact-heading"><h1 id="fwaAlignmentTitle">Allineamento antenna</h1></div>
+    <div class="fwa-alignment-task" id="fwaAlignTask"></div>
+  <div class="fwa-alignment-context"><div><strong id="fwaAlignModel"></strong><span id="fwaAlignMac"></span></div><div><strong id="fwaAlignNode"></strong><span id="fwaAlignCluster"></span></div></div>
+    <div class="fwa-telemetry-banner"><span class="fwa-demo-pill">SIMULAZIONE</span><span>Nessuna antenna collegata</span></div>
+    <div class="fwa-graph-card">
+      <div class="fwa-graph-heading"><span>Segnale ricevuto &middot; demo</span><span id="fwaRunState">Non avviata</span></div>
+      <div class="fwa-signal-line"><div><strong id="fwaSignal">&mdash;</strong><span>dBm</span></div><div class="fwa-peak"><span>Picco della prova</span><strong id="fwaPeak">&mdash;</strong></div></div>
+      <svg id="fwaSignalChart" viewBox="0 0 336 170" role="img" aria-labelledby="fwaChartTitle fwaChartDesc">
+        <title id="fwaChartTitle">Grafico di allineamento: segnale RSSI simulato</title>
+        <desc id="fwaChartDesc">Nessuna misura reale. Avvia la simulazione per vedere la variazione del segnale.</desc>
+        <g class="fwa-chart-grid"><path d="M38 18H324M38 52H324M38 86H324M38 120H324M38 150H324"/><path d="M38 18V150M110 18V150M182 18V150M254 18V150M324 18V150"/></g>
+        <g class="fwa-chart-ticks"><text x="1" y="22">-35</text><text x="1" y="56">-50</text><text x="1" y="90">-65</text><text x="1" y="124">-80</text><text x="1" y="154">-95</text><text x="38" y="167" id="fwaChartFrom">1</text><text x="324" y="167" text-anchor="end" id="fwaChartTo">45 campioni</text></g>
+        <line id="fwaChartPeak" x1="38" x2="324" y1="150" y2="150" class="fwa-chart-peak" visibility="hidden"/>
+        <polyline id="fwaChartLine" points="" class="fwa-chart-line"/>
+        <circle id="fwaChartDot" cx="38" cy="150" r="4" class="fwa-chart-dot" visibility="hidden"/>
+        <text id="fwaChartEmpty" x="180" y="86" text-anchor="middle" class="fwa-chart-ticks">Avvia la simulazione</text>
+      </svg>
+      <div class="fwa-graph-caption"><span><i aria-hidden="true"></i>RSSI simulato &middot; 1 campione/s</span><span id="fwaSampleCount">0 campioni</span></div>
+      <p id="fwaSignalTrend" class="fwa-trend">Il grafico comparir&agrave; durante la prova.</p>
+      <div class="fwa-button-row"><button type="button" id="fwaSimToggle" class="fwa-primary">Avvia simulazione</button><button type="button" id="fwaSimReset" class="fwa-secondary" disabled>Azzera</button></div>
+    </div>
+    <div class="fwa-simulation-controls">
+      <div class="fwa-slider-label"><label for="fwaOrientation">Rotazione virtuale</label><output id="fwaOrientationValue" for="fwaOrientation">-25&deg;</output></div>
+      <input id="fwaOrientation" type="range" min="-30" max="30" step="1" value="-25" aria-describedby="fwaSimulationHelp">
+      <div class="fwa-range-labels"><span>-30&deg;</span><span>0&deg;</span><span>+30&deg;</span></div>
+      <p id="fwaSimulationHelp">Sposta il cursore per provare il grafico. Questi valori non vanno usati per puntare un'antenna reale.</p>
+    </div>
+    <div id="fwaAlignmentError" class="fwa-error" role="alert" hidden></div>
+    <div class="fwa-completion-controls">
+      <button type="button" id="fwaFinishAlignment" class="fwa-secondary" disabled>Termina allineamento</button>
+      <p id="fwaAlignmentFinished" class="fwa-done-notice" role="status" hidden></p>
+      <button type="button" id="fwaAlignmentContinue" class="fwa-primary" disabled>Continua</button>
+      <p class="fwa-form-foot" id="fwaDraftInfo">Acquisisci almeno un campione, poi termina l'allineamento.</p>
+    </div>
+    <div class="fwa-button-row"><button type="button" id="fwaEditParameters" class="fwa-secondary">Modifica parametri</button><button type="button" id="fwaBackToList" class="fwa-secondary">Torna alle attività</button></div>
+  </section>
+
+
+  <section class="screen fwa-install" id="screen-installazioni-fwa-router" aria-labelledby="fwaRouterTitle">
+    <div class="fwa-step-line"></div>
+    <div class="fwa-compact-heading"><h1 id="fwaRouterTitle">Installa il router</h1><span class="fwa-demo-pill">DEMO</span></div>
+    <p class="fwa-alignment-task" id="fwaRouterActivity"></p>
+    <section class="fwa-operator-note"><h2>Indicazioni dell'operatore</h2><p id="fwaRouterInstructions"></p></section>
+    <form id="fwaRouterForm" novalidate>
+      <div class="fwa-field">
+        <label for="fwaRouterBrand"><span>01</span>Marchio router</label>
+        <select id="fwaRouterBrand" required aria-describedby="fwaRouterBrandHelp"><option value="">Seleziona il marchio</option></select>
+        <small id="fwaRouterBrandHelp">Solo i marchi con router disponibili nel magazzino FWA.</small>
+      </div>
+      <div class="fwa-field">
+        <label for="fwaRouterSN"><span>02</span>Numero seriale (SN)</label>
+        <select id="fwaRouterSN" required disabled aria-describedby="fwaRouterSNHelp"><option value="">Seleziona prima il marchio</option></select>
+        <small id="fwaRouterSNHelp">SN e modello provengono dallo stesso apparato in magazzino.</small>
+      </div>
+      <div class="fwa-field">
+        <label for="fwaRouterModel">Modello selezionato <em>Da magazzino</em></label>
+        <input id="fwaRouterModel" type="text" readonly aria-readonly="true" placeholder="Si compila dopo la scelta dell'SN">
+      </div>
+      <div id="fwaRouterError" class="fwa-error" role="alert" hidden></div>
+      <button type="submit" id="fwaRouterContinue" class="fwa-primary" disabled>Continua</button>
+    </form>
+    <button type="button" id="fwaRouterBack" class="fwa-secondary">Torna all'allineamento</button>
+    <p class="fwa-form-foot">Nessun costo aggiunto automaticamente. In questa prova il magazzino resta invariato.</p>
+  </section>
+  <section class="screen fwa-install" id="screen-installazioni-fwa-resoconto" aria-labelledby="fwaSummaryTitle">
+    <div class="fwa-step-line"></div>
+    <div class="fwa-compact-heading"><h1 id="fwaSummaryTitle">Resoconto installazione</h1></div>
+    <p class="fwa-alignment-task" id="fwaSummaryActivity"></p>
+    <div class="fwa-telemetry-banner"><span class="fwa-demo-pill">PROVA LOCALE</span><span>Segnale e nodo di aggancio simulati</span></div>
+    <div id="fwaSummaryReport" class="fwa-report"></div>
+    <div id="fwaSummaryError" class="fwa-error" role="alert" hidden></div>
+    <button type="button" class="fwa-primary" id="fwaFinishInstallation">Fine Installazione</button>
+    <div class="fwa-button-row"><button type="button" class="fwa-secondary" id="fwaSummaryEditAlignment">Rivedi allineamento</button><button type="button" class="fwa-secondary" id="fwaSummaryEditRouter">Modifica router</button></div>
+    <p class="fwa-form-foot">Fine Installazione registra il resoconto e completa l'attivit&agrave; solo in questa sessione. Non attiva servizi su Sibiz, non scarica apparati e non invia email.</p>
+  </section>
+  <section class="screen fwa-install" id="screen-installazioni-fwa-completata" aria-labelledby="fwaCompletedTitle">
+    <div class="fwa-finish-icon" aria-hidden="true">&#10003;</div>
+    <h1 id="fwaCompletedTitle">Installazione completata</h1>
+    <span class="fwa-demo-pill">CONFERMA DI PROVA</span>
+    <p class="fwa-alignment-task" id="fwaCompletedActivity"></p>
+    <p id="fwaCompletedTime" class="fwa-form-foot"></p>
+    <button type="button" class="fwa-primary" id="fwaCompletedBack">Torna alle installazioni</button>
+    <div class="fwa-done-notice">Resoconto salvato in sola lettura nella sessione. Lo ritrovi nell'elenco, nel filtro Completate.</div>
+    <div id="fwaFinalReport" class="fwa-report"></div>
+    <p class="fwa-form-foot">I dati sono fittizi: nessuna installazione o connessione radio reale verificata. Ricaricando la pagina, le prove vengono azzerate.</p>
+  </section>
+
   <div class="bottom-bar" id="bottomBar" style="display:none;">
     <button class="btn btn-ghost" onclick="resetApp()">Torna alla lista ticket</button>
   </div>
@@ -1691,6 +1859,10 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
       <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v4a3 3 0 0 0 0 6v4H4v-4a3 3 0 0 0 0-6V5Z"/><path d="M9 5v3m0 3v2m0 3v3"/></svg></span>
       <span class="tab-label">Ticket</span>
     </div>
+    <button type="button" class="tab-item" id="tab-installazioni-fwa" onclick="switchTab('installazioni-fwa')" aria-label="Installazioni FWA">
+      <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 3 12 12a8.5 8.5 0 0 1-12-12Z"/><path d="m11 9 5-5m0 0h-4m4 0v4M9 16l-2 5m5-4 2 4M4 21h14m1-17a6 6 0 0 1 2 5"/></svg></span>
+      <span class="tab-label">Installazioni<br>FWA</span>
+    </button>
     <div class="tab-item" id="tab-disinstallazioni" onclick="switchTab('disinstallazioni')">
       <span class="tab-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 6.3 3.2 3.2 3.1-3.1a6 6 0 0 1-7.5 7.5l-6.8 6.8a2.3 2.3 0 0 1-3.2-3.2l6.8-6.8a6 6 0 0 1 7.5-7.5l-3.1 3.1Z"/></svg></span>
       <span class="tab-label">Disinstallazioni</span>
@@ -6068,7 +6240,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const VERSION = 'build-2026-10-02-email-test-transizioni-r5';
   const STORAGE_KEY = 'sna.ui.pageMotion.v1';
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const roots = ['screen-list', 'screen-disinstallazioni', 'screen-magazzino'];
+  const roots = ['screen-list', 'screen-installazioni-fwa', 'screen-disinstallazioni', 'screen-magazzino'];
   const paths = [
     ['screen-phonehome', 'screen-login', 'screen-register'],
     ['screen-list', 'screen-detail', 'screen-diagnosi', 'screen-magazzino-domanda',
@@ -6078,7 +6250,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       'screen-disinstallazione-materiali', 'screen-disinstallazione-otp',
       'screen-disinstallazione-finale'],
     ['screen-magazzino', 'screen-apparati-possesso'],
-    ['screen-magazzino', 'screen-rientro-guasti']
+    ['screen-magazzino', 'screen-rientro-guasti'],
+    ['screen-installazioni-fwa', 'screen-installazioni-fwa-dettaglio', 'screen-installazioni-fwa-parametri', 'screen-installazioni-fwa-allineamento', 'screen-installazioni-fwa-router', 'screen-installazioni-fwa-resoconto', 'screen-installazioni-fwa-completata']
   ];
   let enabled = true, ready = false, activeMotion = null, directionHint = null;
   try { enabled = localStorage.getItem(STORAGE_KEY) !== 'off'; } catch (_) {}
@@ -7415,5 +7588,660 @@ html[data-sna-theme="siportal"] .sna-theme-announcer {position:absolute;width:1p
   window.addEventListener('pageshow',()=>render());
 })();
 </script>
+
+<style id="sna-fwa-installations-style">
+/* Installazioni FWA r15: additive styles, solid colours, both White and Black. */
+html[data-sna-theme="siportal"] {--fwa-surface:#252B32;--fwa-field:#1C2228;--fwa-text:#F3F5F7;--fwa-muted:#B7C0CA;--fwa-line:#475461;--fwa-accent:#FFA361;--fwa-orange:#EC6707;--fwa-error:#FFB6A3;--fwa-error-bg:#402720;--fwa-grid:#414B56;}
+html[data-sna-theme="siportal"][data-sna-color-mode="white"] {--fwa-surface:#FFFFFF;--fwa-field:#F4F6F8;--fwa-text:#1D242C;--fwa-muted:#536171;--fwa-line:#BBC5CF;--fwa-accent:#AC3A04;--fwa-error:#9C321B;--fwa-error-bg:#FFF0EB;--fwa-grid:#D8DFE7;}
+html[data-sna-theme="siportal"] #tabBar {gap:2px;padding-left:4px;padding-right:4px;}
+html[data-sna-theme="siportal"] #tabBar .tab-item {min-width:0;flex:1 1 0;justify-content:flex-start;padding:8px 1px 6px;gap:4px;}
+html[data-sna-theme="siportal"] #tabBar .tab-label {font:600 10px/1.15 'Segoe UI',Arial,sans-serif;letter-spacing:0;text-transform:none;min-height:25px;display:flex;align-items:center;justify-content:center;text-align:center;overflow-wrap:normal;}
+html[data-sna-theme="siportal"] #tabBar .tab-icon {height:22px;display:flex;align-items:center;justify-content:center;}
+html[data-sna-theme="siportal"] #tab-installazioni-fwa {appearance:none;background:transparent;border:1px solid transparent;font:inherit;cursor:pointer;}
+html[data-sna-theme="siportal"] #tab-installazioni-fwa.active {background:#EC6707!important;color:#111619!important;border-color:#EC6707!important;}
+html[data-sna-theme="siportal"] #tab-installazioni-fwa .tab-icon svg {width:23px;height:23px;}
+html[data-sna-theme="siportal"] .fwa-install {gap:14px;padding:18px;min-height:0;}
+html[data-sna-theme="siportal"] .fwa-install > * {flex-shrink:0;min-width:0;}
+html[data-sna-theme="siportal"] .fwa-install [hidden] {display:none!important;}
+html[data-sna-theme="siportal"] .fwa-install h1 {font:700 23px/1.2 'Segoe UI',Arial,sans-serif;letter-spacing:-.5px;color:var(--fwa-text);}
+html[data-sna-theme="siportal"] .fwa-install h2 {font:650 14px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-section-heading {display:flex;flex-direction:column;gap:7px;}
+.fwa-section-heading p,.fwa-scope-note p {font:13px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-kicker {color:var(--fwa-accent);font:700 10px/1.3 'Segoe UI',Arial,sans-serif;letter-spacing:.12em;}
+.fwa-demo-notice {display:flex;flex-direction:column;gap:4px;padding:11px 12px;border:1px solid var(--fwa-line);border-left:3px solid var(--fwa-orange);border-radius:8px;background:var(--fwa-surface);}
+.fwa-demo-notice strong {color:var(--fwa-accent);font-size:12px;}
+.fwa-demo-notice span {font:12px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-list-caption {display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;}
+.fwa-list-caption > span {font:11px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-order-list {display:flex;flex-direction:column;gap:12px;}
+.fwa-order-card {border:1px solid var(--fwa-line);border-radius:12px;background:var(--fwa-surface);padding:14px;display:flex;flex-direction:column;gap:10px;}
+.fwa-order-header {display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.fwa-order-header > span {color:var(--fwa-accent);font:600 11px/1.3 ui-monospace,monospace;}
+.fwa-order-header > em {font:600 10px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);font-style:normal;}
+.fwa-order-card h3 {font:650 15px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-order-detail {font:12px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-order-detail b {color:var(--fwa-text);font-weight:500;}
+.fwa-scope-note {padding:13px 0 0;border-top:1px solid var(--fwa-line);display:flex;flex-direction:column;gap:7px;}
+.fwa-scope-note > strong {font-size:12px;color:var(--fwa-text);}
+.fwa-step-line {display:flex;gap:14px;font:600 10.5px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);border-bottom:1px solid var(--fwa-line);padding-bottom:9px;}
+.fwa-step-line .fwa-step-active {color:var(--fwa-accent);}
+.fwa-compact-heading {display:flex;align-items:center;justify-content:space-between;gap:8px;}
+html[data-sna-theme="siportal"] .fwa-compact-heading h1 {font-size:21px;}
+.fwa-demo-pill {font:750 9px/1.2 'Segoe UI',Arial,sans-serif;letter-spacing:.04em;padding:5px 6px;border:1px solid var(--fwa-orange);color:var(--fwa-accent);border-radius:4px;white-space:nowrap;}
+.fwa-context {display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--fwa-text);padding:0 0 2px;}
+.fwa-context span {color:var(--fwa-muted);font:11px/1.3 ui-monospace,monospace;}
+#fwaParamsForm {display:flex;flex-direction:column;gap:14px;}
+.fwa-field {display:flex;flex-direction:column;gap:5px;}
+.fwa-field label {display:flex;align-items:center;gap:7px;font:650 12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-field label > span {color:var(--fwa-accent);font:600 10px/1.4 ui-monospace,monospace;}
+.fwa-field label > em {margin-left:auto;font:500 10px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);font-style:normal;}
+html[data-sna-theme="siportal"] .fwa-field input,
+html[data-sna-theme="siportal"] .fwa-field select {width:100%;min-width:0;min-height:45px;border:1px solid var(--fwa-line)!important;border-radius:8px;padding:10px 11px;background:var(--fwa-field)!important;color:var(--fwa-text)!important;font:500 14px/1.35 'Segoe UI',Arial,sans-serif;text-overflow:ellipsis;}
+html[data-sna-theme="siportal"] #fwaMac {font-family:ui-monospace,'SFMono-Regular',Consolas,monospace;font-size:12px;}
+html[data-sna-theme="siportal"] #fwaCluster {background:var(--fwa-surface)!important;border-style:dashed!important;color:var(--fwa-muted)!important;}
+.fwa-field small {font:11px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-wireless {font:11px/1.4 ui-monospace,monospace;color:var(--fwa-text);padding:8px;border:1px solid var(--fwa-line);border-radius:6px;overflow-wrap:anywhere;}
+.fwa-error {font:12px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-error);background:var(--fwa-error-bg);padding:10px 11px;border-left:3px solid currentColor;border-radius:5px;}
+.fwa-primary,.fwa-secondary {appearance:none;min-height:44px;padding:11px 12px;border-radius:8px;font:650 13px/1.4 'Segoe UI',Arial,sans-serif;cursor:pointer;touch-action:manipulation;}
+html[data-sna-theme="siportal"] .fwa-primary {background:#EC6707!important;color:#111619!important;border:1px solid #EC6707;}
+html[data-sna-theme="siportal"] .fwa-secondary {background:var(--fwa-surface)!important;color:var(--fwa-text)!important;border:1px solid var(--fwa-line);}
+.fwa-primary:disabled,.fwa-secondary:disabled {opacity:.48;cursor:not-allowed;}
+.fwa-primary:focus-visible,.fwa-secondary:focus-visible {outline:2px solid var(--fwa-accent);outline-offset:3px;}
+.fwa-form-foot {font:11px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+#fwaToAlignment {display:flex;justify-content:space-between;align-items:center;margin-top:2px;}
+.fwa-alignment-context {display:flex;flex-direction:column;gap:6px;border-left:2px solid var(--fwa-orange);padding-left:10px;}
+.fwa-alignment-context > div {display:flex;align-items:baseline;justify-content:space-between;gap:8px;font:11px/1.4 'Segoe UI',Arial,sans-serif;}
+.fwa-alignment-context strong {color:var(--fwa-text);font-weight:600;}
+.fwa-alignment-context span {color:var(--fwa-muted);font-family:ui-monospace,monospace;font-size:10.5px;overflow-wrap:anywhere;}
+.fwa-telemetry-banner {display:flex;align-items:center;gap:8px;font:11px/1.35 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-graph-card {padding:14px 12px 10px;border:1px solid var(--fwa-line);background:var(--fwa-surface);border-radius:12px;}
+.fwa-graph-heading {display:flex;align-items:center;justify-content:space-between;gap:8px;font:11px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+#fwaRunState {font-size:10px;color:var(--fwa-accent);}
+.fwa-signal-line {display:flex;align-items:center;justify-content:space-between;gap:10px;margin:7px 0 4px;}
+.fwa-signal-line > div:first-child {display:flex;align-items:baseline;gap:5px;color:var(--fwa-text);}
+#fwaSignal {font:700 42px/1.15 'Segoe UI',Arial,sans-serif;letter-spacing:-1px;font-variant-numeric:tabular-nums;}
+.fwa-signal-line > div:first-child > span {font-size:12px;color:var(--fwa-muted);}
+.fwa-peak {display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.fwa-peak span {font-size:10px;color:var(--fwa-muted);}
+.fwa-peak strong {font:600 15px/1.3 ui-monospace,monospace;color:var(--fwa-accent);}
+#fwaSignalChart {display:block;width:100%;height:auto;overflow:visible;}
+.fwa-chart-grid {stroke:var(--fwa-grid);stroke-width:1;fill:none;}
+.fwa-chart-ticks {fill:var(--fwa-muted);font:10px Arial,sans-serif;}
+.fwa-chart-line {fill:none;stroke:var(--fwa-orange);stroke-width:2.8;stroke-linejoin:round;stroke-linecap:round;}
+.fwa-chart-dot {fill:var(--fwa-orange);stroke:var(--fwa-surface);stroke-width:1.5;}
+.fwa-chart-peak {stroke:var(--fwa-muted);stroke-width:1;stroke-dasharray:4 4;}
+.fwa-graph-caption {display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:7px;font:10px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-graph-caption i {display:inline-block;height:2px;width:12px;background:var(--fwa-orange);vertical-align:middle;margin-right:4px;}
+.fwa-trend {border-top:1px solid var(--fwa-line);padding-top:8px;margin-top:10px;font:11px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);min-height:24px;}
+.fwa-simulation-controls {display:flex;flex-direction:column;gap:7px;}
+.fwa-slider-label {display:flex;justify-content:space-between;align-items:center;font:600 12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-slider-label output {color:var(--fwa-accent);font-family:ui-monospace,monospace;}
+html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width:100%;height:26px;min-height:26px;margin:0;border:none!important;background:transparent!important;accent-color:#EC6707;}
+.fwa-range-labels {display:flex;justify-content:space-between;color:var(--fwa-muted);font:10px/1.2 ui-monospace,monospace;margin-top:-5px;}
+#fwaSimulationHelp {color:var(--fwa-muted);font:11px/1.4 'Segoe UI',Arial,sans-serif;}
+.fwa-button-row {display:flex;align-items:stretch;gap:8px;}
+.fwa-button-row > button {flex:1;min-width:0;}
+#fwaSimToggle {flex:2;}
+@media(max-width:350px){html[data-sna-theme="siportal"] .fwa-install {padding:14px;gap:12px;} html[data-sna-theme="siportal"] #tabBar .tab-label {font-size:9px;} .fwa-alignment-context>div {flex-wrap:wrap;gap:2px 6px;} #fwaSignal {font-size:36px;} .fwa-field label>em {font-size:9px;} .fwa-primary,.fwa-secondary {font-size:12px;padding:10px 8px;}}
+
+.fwa-graph-card > .fwa-button-row {margin-top:12px;}
+
+</style>
+<script id="sna-fwa-installations-script">/* Installazioni FWA r17: locally completed demonstration activities.
+ * No network, billing, email, PDF changes, provisioning or warehouse writes.
+ * Operator instructions and cluster are immutable assignment data (demo Sibiz).
+ * Telemetry is explicitly simulated, never an acceptance test of a real link.
+ */
+(() => {
+  'use strict';
+  const VERSION='build-2026-10-06-installazioni-router-resoconto-r17';
+  const ROOT='screen-installazioni-fwa', DETAIL=ROOT+'-dettaglio', PARAMS=ROOT+'-parametri', ALIGN=ROOT+'-allineamento';
+  const ROUTER=ROOT+'-router', SUMMARY=ROOT+'-resoconto', FINAL=ROOT+'-completata';
+  const MODELS=Object.freeze(['SM450b HG','SM450b MG','ePMP Force 180','ePMP Force 200']);
+    const CLUSTERS=Object.freeze([
+  {
+    "id": "CL-DEMO-SR",
+    "name": "Siracusa - DEMO",
+    "nodes": [
+      {
+        "id": "N-DEMO-SR-01",
+        "name": "Siracusa Nord - DEMO"
+      },
+      {
+        "id": "N-DEMO-SR-02",
+        "name": "Siracusa Centro - DEMO"
+      },
+      {
+        "id": "N-DEMO-SR-03",
+        "name": "Siracusa Sud - DEMO"
+      }
+    ]
+  },
+  {
+    "id": "CL-DEMO-AV",
+    "name": "Avola - DEMO",
+    "nodes": [
+      {
+        "id": "N-DEMO-AV-01",
+        "name": "Avola Nord - DEMO"
+      },
+      {
+        "id": "N-DEMO-AV-02",
+        "name": "Avola Centro - DEMO"
+      },
+      {
+        "id": "N-DEMO-AV-03",
+        "name": "Avola Sud - DEMO"
+      }
+    ]
+  },
+  {
+    "id": "CL-DEMO-CT",
+    "name": "Catania - DEMO",
+    "nodes": [
+      {
+        "id": "N-DEMO-CT-01",
+        "name": "Catania Nord - DEMO"
+      },
+      {
+        "id": "N-DEMO-CT-02",
+        "name": "Catania Centro - DEMO"
+      },
+      {
+        "id": "N-DEMO-CT-03",
+        "name": "Catania Sud - DEMO"
+      }
+    ]
+  },
+  {
+    "id": "CL-DEMO-RG",
+    "name": "Ragusa - DEMO",
+    "nodes": [
+      {
+        "id": "N-DEMO-RG-01",
+        "name": "Ragusa Nord - DEMO"
+      },
+      {
+        "id": "N-DEMO-RG-02",
+        "name": "Ragusa Centro - DEMO"
+      },
+      {
+        "id": "N-DEMO-RG-03",
+        "name": "Ragusa Sud - DEMO"
+      }
+    ]
+  }
+].map(c=>Object.freeze({...c,nodes:Object.freeze(c.nodes.map(n=>Object.freeze(n)))})));
+  const ORDERS=Object.freeze([
+  {
+    "id": "INS-FWA-1001",
+    "client": "Giulia Rinaldi",
+    "contract": "2026W91001",
+    "address": "Via della Prova 12, Siracusa",
+    "clusterId": "CL-DEMO-SR",
+    "suggestedModel": "SM450b HG",
+    "partnerCode": "8264",
+    "installationType": "antenna_router",
+    "operatorText": "Installazione servizio FWA con Antenna e router Siportal. Posizionare e allineare l'antenna sul nodo del cluster assegnato, quindi installare un router prelevato dal magazzino del partner."
+},
+  {
+    "id": "INS-FWA-1002",
+    "client": "Marco Ferri",
+    "contract": "2026W91002",
+    "address": "Contrada Demo 8, Avola",
+    "clusterId": "CL-DEMO-AV",
+    "suggestedModel": "SM450b MG",
+    "partnerCode": "8264",
+    "installationType": "antenna_only",
+    "operatorText": "Installazione servizio FWA con solo Antenna. Il cliente fornisce e installa privatamente il proprio router. Non fornire un router Siportal; allineare l'antenna sul nodo del cluster assegnato."
+},
+  {
+    "id": "INS-FWA-1003",
+    "client": "Elena Conti",
+    "contract": "2026W91003",
+    "address": "Via del Collaudo 21, Catania",
+    "clusterId": "CL-DEMO-CT",
+    "suggestedModel": "ePMP Force 180",
+    "partnerCode": "8264",
+    "installationType": "antenna_router",
+    "operatorText": "Installazione servizio FWA con Antenna e router Siportal. Dopo il puntamento dell'antenna, scegliere il router dal magazzino e registrare il suo numero seriale nel resoconto."
+},
+  {
+    "id": "INS-FWA-1004",
+    "client": "Studio Esempio Srl",
+    "contract": "2026W91004",
+    "address": "Via dei Test 4, Ragusa",
+    "clusterId": "CL-DEMO-RG",
+    "suggestedModel": "ePMP Force 200",
+    "partnerCode": "8264",
+    "installationType": "antenna_only",
+    "operatorText": "Installazione servizio FWA con solo Antenna. Studio Esempio Srl provvede privatamente al router. L'attivit\u00e0 del partner comprende antenna e allineamento; nessun router Siportal da installare."
+}
+].map(o=>Object.freeze(o)));
+
+  const drafts=new Map();
+  let selectedOrderId=null,timer=null,runningKey=null,filter='all';
+  const el=id=>document.getElementById(id);
+  const owner=()=>loggedInPartner ? String(loggedInPartner.code) : null;
+  const selectedOrder=()=>ORDERS.find(o=>o.id===selectedOrderId && o.partnerCode===owner()) || null;
+  const clusterFor=o=>o ? CLUSTERS.find(c=>c.id===o.clusterId) || null : null;
+  const keyFor=id=>owner() ? owner()+'|'+id : null;
+  const activeId=()=>document.querySelector('.phone > .screen.active')?.id || '';
+  const isOurScreen=id=>[ROOT,DETAIL,PARAMS,ALIGN,ROUTER,SUMMARY,FINAL].includes(id);
+  const normalize=v=>normalizzaMacAntenna(v);
+  const snKey=v=>String(v == null ? '' : v).trim().toUpperCase();
+  const clone=v=>JSON.parse(JSON.stringify(v));
+  const fmtDb=v=>v==null?'\u2014':Number(v).toFixed(1).replace('.',',');
+  const signed=v=>(v>0?'+':'')+fmtDb(v);
+  const dateTime=v=>v ? new Date(v).toLocaleString('it-IT') : '\u2014';
+  const needsRouter=o=>o?.installationType==='antenna_router';
+  const typeLabel=o=>needsRouter(o)?'Antenna e router':'Solo Antenna';
+  function freeze(v){if(v && typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v);}return v;}
+  function textNode(tag,text,cls){const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;}
+  function error(id,messages){const n=el(id);n.hidden=!messages.length;n.textContent=messages.join(' ');}
+  function createDraft(id){return {id,startedAt:'',model:'',mac:'',nodeId:'',position:-25,samples:[],peak:null,ticks:0,hasStarted:false,stopReason:'',alignment:null,routerBrand:'',routerSN:'',routerModel:'',routerConfirmed:false,completion:null};}
+  function currentDraft(){const o=selectedOrder(),k=o && keyFor(o.id);if(!k)return null;if(!drafts.has(k))drafts.set(k,createDraft(o.id));return drafts.get(k);}
+  function assignedOrders(){return ORDERS.filter(o=>o.partnerCode===owner());}
+  function scope(d=currentDraft(),o=ORDERS.find(o=>o.id===d?.id && o.partnerCode===owner())){return JSON.stringify([owner(),o?.id,o?.installationType,o?.clusterId,d?.model,d?.mac,d?.nodeId]);}
+  function aligned(d=currentDraft()){return !!(d?.alignment && d.alignment.scope===scope(d));}
+  function nodeFor(d=currentDraft()){return clusterFor(selectedOrder())?.nodes.find(n=>n.id===d?.nodeId) || null;}
+    function candidates(model){
+    if(!MODELS.includes(model))return [];
+    const faulty=new Set((FAULTY_STOCK.fwa || []).map(x=>normalize(x.code)).filter(Boolean));
+    const claimed=new Map();
+    for(const item of STOCK.fwa || []){
+      if(!MODELS.includes(item.n))continue;
+      for(const raw of item.codes || []){
+        const mac=normalize(raw);
+        if(!claimed.has(mac))claimed.set(mac,new Set());
+        claimed.get(mac).add(item.n);
+      }
+    }
+    const seen=new Set(),items=[];
+    for(const item of (STOCK.fwa || []).filter(x=>x.n===model && x.trackBy==='mac')){
+      for(const raw of item.codes || []){
+        const mac=normalize(raw);
+        if(!/^[A-Z0-9]{12}$/.test(mac) || seen.has(mac) || faulty.has(mac) || claimed.get(mac)?.size!==1)continue;
+        seen.add(mac);
+        const used=Object.keys(USATI_INFO || {}).some(k=>normalize(k)===mac);
+        const declared=[...CODICI_DICHIARATI].some(k=>normalize(k)===mac);
+        const wireless=Object.entries(WIRELESS_MAC || {}).find(([k])=>normalize(k)===mac)?.[1];
+        items.push({model,mac,used,declared,wirelessMac:item.dualMac && wireless ? normalize(wireless) : ''});
+      }
+    }
+    return items;
+  }
+
+  function routerBrand(name){if(/zyxel/i.test(name))return 'Zyxel';if(/fritz/i.test(name))return 'Fritz!Box';return name.replace(/^router\s+/i,'').split(/\s+/)[0];}
+  function routers(){
+    // Only routers from the FWA inventory, never ONTs or items in the faulty area.
+    const bad=new Set(Object.values(FAULTY_STOCK).flat().map(r=>snKey(r.code)).filter(Boolean));
+    const items=(STOCK.fwa || []).filter(it=>it.trackBy==='sn' && /router|fritz/i.test(it.n) && !/\bONT\b/i.test(it.n));
+    const names=new Map();
+    for(const it of items)for(const raw of it.codes || []){const k=snKey(raw);if(!names.has(k))names.set(k,new Set());names.get(k).add(it.n);}
+    const seen=new Set(),result=[];
+    for(const it of items)for(const raw of it.codes || []){
+      const sn=String(raw).trim(),k=snKey(raw);
+      if(!k || bad.has(k) || seen.has(k) || names.get(k)?.size!==1)continue;
+      seen.add(k);
+      result.push({brand:routerBrand(it.n),model:it.n,sn,used:Object.keys(USATI_INFO || {}).some(c=>snKey(c)===k),declared:[...CODICI_DICHIARATI].some(c=>snKey(c)===k)});
+    }
+    return result;
+  }
+  function routerFor(d=currentDraft()){return d ? routers().find(r=>r.brand===d.routerBrand && r.model===d.routerModel && r.sn===d.routerSN) || null : null;}
+  function problems(d=currentDraft(),o=selectedOrder()){
+    if(!owner())return ['Accedi con un partner prima di avviare la procedura.'];
+    if(!o || !d)return ['Seleziona una attivit\u00e0 assegnata.'];
+    const a=[];
+    if(!['antenna_router','antenna_only'].includes(o.installationType))a.push('Indicazioni operatore mancanti: serve il tipo di installazione da Sibiz.');
+    if(!MODELS.includes(d.model))a.push('Seleziona il tipo di antenna.');
+    else if(!candidates(d.model).length)a.push('Nessun MAC utilizzabile per questo modello nel magazzino.');
+    if(!d.mac)a.push('Seleziona un MAC dal magazzino.');
+    else if(!candidates(d.model).some(c=>c.mac===d.mac))a.push('Il MAC selezionato non \u00e8 pi\u00f9 disponibile. Torna ai parametri e sceglilo nuovamente.');
+    const c=clusterFor(o);
+    if(!c)a.push('Cluster della commessa non disponibile: serve il dato da Sibiz.');
+    else if(!c.nodes.some(n=>n.id===d.nodeId))a.push('Seleziona un nodo appartenente al cluster assegnato.');
+    return a;
+  }
+  function alignmentProblems(){const d=currentDraft(),a=problems();if(!aligned(d))a.push('Premi Termina allineamento prima di continuare.');return a;}
+  function routerProblems(){
+    const d=currentDraft(),o=selectedOrder();if(!needsRouter(o))return [];
+    if(!routers().length)return ['Nessun router utilizzabile nel magazzino FWA.'];
+    if(!d?.routerBrand || !routers().some(r=>r.brand===d.routerBrand))return ['Seleziona il marchio del router dal magazzino FWA.'];
+    if(!routerFor(d))return ['Seleziona un SN disponibile per il marchio scelto. Se non compare pi\u00f9, scegli un altro apparato.'];
+    return [];
+  }
+  function completionProblems(){const a=alignmentProblems();a.push(...routerProblems());if(needsRouter(selectedOrder()) && !currentDraft()?.routerConfirmed)a.push('Conferma il router con Continua.');return a;}
+  function stage(d){return d?.completion?'done':!d?.startedAt?'new':'working';}
+  function stateLabel(d){return d?.completion?'Completata (demo)':!d?.startedAt?'Da iniziare':aligned(d)?'Allineamento terminato':d.hasStarted?'Allineamento in prova':'In lavorazione';}
+  function renderList(){
+    const host=el('fwaOrderList');host.replaceChildren();const orders=assignedOrders();
+    const count=s=>orders.filter(o=>stage(drafts.get(keyFor(o.id)))===s).length;
+    el('fwaCountAll').textContent=orders.length;el('fwaCountNew').textContent=count('new');el('fwaCountWorking').textContent=count('working');el('fwaCountDone').textContent=count('done');
+    el('fwaAssignedPartner').textContent='Partner '+(owner() || '-')+' \u00b7 '+orders.length+' attivit\u00e0 fittizie assegnate';
+    document.querySelectorAll('[data-fwa-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.fwaFilter===filter)));
+    const visible=orders.filter(o=>filter==='all' || stage(drafts.get(keyFor(o.id)))===filter);
+    el('fwaOrderCount').textContent=visible.length+' di '+orders.length;
+    if(!visible.length)host.append(textNode('p',!orders.length?'Nessuna attivit\u00e0 assegnata. Le prove sono disponibili per il partner 8264.':'Nessuna attivit\u00e0 in questo filtro.','fwa-empty'));
+    for(const o of visible){
+      const d=drafts.get(keyFor(o.id)),card=document.createElement('article');card.className='fwa-order-card fwa-activity-card';card.dataset.activity=o.id;
+      const head=textNode('div','','fwa-order-header');head.append(textNode('span',o.id),textNode('em',stateLabel(d),'fwa-state '+stage(d)));
+      const btn=textNode('button',d?.completion?'Vedi resoconto \u2192':d?.startedAt?'Riprendi attivit\u00e0 \u2192':'Apri attivit\u00e0 \u2192','fwa-primary');
+      btn.type='button';btn.dataset.fwaOrder=o.id;btn.setAttribute('aria-label','Apri '+o.id+' - '+o.client);btn.onclick=()=>openOrder(o.id);
+      card.onclick=e=>{if(!e.target.closest('button'))openOrder(o.id);};
+      card.append(head,textNode('h3',o.client),textNode('p','Contratto '+o.contract,'fwa-activity-contract'),textNode('p',o.address,'fwa-order-detail'),textNode('p',typeLabel(o)+(needsRouter(o)?' \u00b7 fornitura Siportal':' \u00b7 router del cliente'),'fwa-order-type'),textNode('p','Cluster: '+(clusterFor(o)?.name || 'Non disponibile'),'fwa-activity-cluster'),btn);host.append(card);
+    }
+  }
+  function renderProgress(id){
+    const host=el(id)?.querySelector('.fwa-step-line');if(!host)return;
+    const order=selectedOrder(),steps=[[PARAMS,'Antenna'],[ALIGN,'Allineamento'],...(needsRouter(order)?[[ROUTER,'Router']]:[]),[SUMMARY,'Resoconto']];
+    host.replaceChildren(...steps.map(([key,label],i)=>textNode('span',(i+1)+' '+label,key===id || (id===FINAL && key===SUMMARY)?'fwa-step-active':'')));
+  }
+  function renderDetail(){
+    const o=selectedOrder(),d=currentDraft();if(!o || !d)return;const c=clusterFor(o);
+    el('fwaDetailId').textContent=o.id;el('fwaDetailClient').textContent=o.client;el('fwaDetailContract').textContent='Contratto '+o.contract;el('fwaDetailAddress').textContent=o.address;
+    el('fwaDetailStatus').textContent=stateLabel(d);el('fwaDetailStatus').className='fwa-state '+stage(d);
+    el('fwaDetailPartner').textContent=o.partnerCode+' - '+(loggedInPartner?.name || 'Partner demo');
+    el('fwaDetailCluster').textContent=c?c.id+' / '+c.name:'Non disponibile';el('fwaDetailNodes').textContent=c?.nodes.map(n=>n.name).join(' \u00b7 ') || 'Nessun nodo';
+    el('fwaDetailType').textContent=typeLabel(o);el('fwaOperatorText').textContent=o.operatorText;
+    el('fwaDetailScenario').textContent='Scenario di prova: '+o.suggestedModel;
+    el('fwaStartActivity').textContent=d.completion?'Visualizza installazione completata':d.startedAt?'Riprendi installazione \u2192':'Avvia installazione \u2192';
+    el('fwaRouterStepDescription').textContent=needsRouter(o)?'Scegli router e SN dal magazzino':'Nessun router da fornire: lo installa il cliente';
+  }
+  function navigate(id){
+    const path=[ROOT,DETAIL,PARAMS,ALIGN,...(needsRouter(selectedOrder())?[ROUTER]:[]),SUMMARY,FINAL];
+    history=path.slice(0,path.indexOf(id));goTo(id,0);el(id).scrollTop=0;
+  }
+  function startActivity(){const d=currentDraft();if(!d)return false;if(d.completion){navigate(FINAL);return true;}if(!d.startedAt)d.startedAt=new Date().toISOString();navigate(aligned(d)?needsRouter(selectedOrder())&&!d.routerConfirmed?ROUTER:SUMMARY:PARAMS);return true;}
+  function addPlaceholder(s,label){s.replaceChildren(new Option(label,''));}
+  function refreshMac(){
+    const d=currentDraft(),list=d?candidates(d.model):[],s=el('fwaMac');
+    addPlaceholder(s,!d?.model?'Seleziona prima l\'antenna':!list.length?'Nessun MAC disponibile':'Seleziona il MAC');
+    list.forEach(c=>s.add(new Option(c.mac+' \u00b7 '+(c.used?'Usato funzionante':c.declared?'Gi\u00e0 in possesso':'Nuovo'),c.mac)));
+    if(d && !d.completion && d.mac && !list.some(c=>c.mac===d.mac)){d.mac='';clearChart(d);}
+    s.disabled=!list.length;s.value=d?.mac || '';
+    el('fwaMacHelp').textContent=!d?.model?'Dal magazzino dell\'app, senza separatori.':!list.length?'Nessun apparato utilizzabile per questo modello.':list.length+' MAC disponibili \u00b7 guasti esclusi.';
+    refreshWireless();
+  }
+  function refreshWireless(){const d=currentDraft(),a=d && candidates(d.model).find(c=>c.mac===d.mac);el('fwaWireless').hidden=!a?.wirelessMac;el('fwaWireless').textContent=a?.wirelessMac?'Wireless MAC: '+a.wirelessMac+' (da magazzino)':'';el('fwaMac').previousElementSibling.lastChild.textContent=d?.model.startsWith('ePMP')?'MAC antenna (ESN)':'MAC antenna';}
+  function renderParameters(){
+    const d=currentDraft(),o=selectedOrder();if(!d || !o)return;
+    el('fwaOrderLabel').textContent=o.client;el('fwaOrderRef').textContent=o.id+' | '+o.contract;el('fwaOrderAddress').textContent=o.address;
+    el('fwaParamScenario').textContent=typeLabel(o)+' \u00b7 indicazione operatore';
+    const m=el('fwaAntenna');addPlaceholder(m,'Seleziona il modello');MODELS.forEach(n=>m.add(new Option(n,n)));m.value=d.model;refreshMac();
+    const c=clusterFor(o);el('fwaCluster').value=c?c.id+' \u00b7 '+c.name:'Cluster non disponibile';
+    const s=el('fwaNode');addPlaceholder(s,c?.nodes.length?'Seleziona il nodo':'Nessun nodo disponibile');for(const n of c?.nodes || [])s.add(new Option(n.name,n.id));
+    if(d.nodeId && !c?.nodes.some(n=>n.id===d.nodeId)){d.nodeId='';clearChart(d);}s.value=d.nodeId;s.disabled=!c?.nodes.length;
+    el('fwaNodeHelp').textContent=c?.nodes.length?c.nodes.length+' nodi del cluster '+c.id+' \u00b7 dati demo.':'Servono i nodi della commessa.';validateParameters(false);
+  }
+  function validateParameters(show=false){const a=problems();el('fwaToAlignment').disabled=!!a.length;error('fwaParamError',show?a:[]);el('fwaParamProgress').textContent=a[0] || 'Parametri pronti \u00b7 apri il grafico simulato.';return !a.length;}
+  function clearChart(d){pause('Parametri modificati');d.samples=[];d.peak=null;d.ticks=0;d.hasStarted=false;d.stopReason='';d.position=-25;d.alignment=null;d.routerConfirmed=false;}
+  function changeParameter(field,value){const d=currentDraft();if(!d || d.completion || d[field]===value)return;clearChart(d);d[field]=value;if(field==='model'){d.mac='';refreshMac();}if(field==='mac')refreshWireless();validateParameters(false);}
+  function openRoot(){if(!owner())return;pause('Cambio area');history=[ROOT];showScreen(ROOT);updateTop(ROOT);}
+  function openOrder(id){if(!owner() || !assignedOrders().some(o=>o.id===id))return false;pause('Cambio attivit\u00e0');selectedOrderId=id;const d=currentDraft();navigate(d.completion?FINAL:DETAIL);return true;}
+  function openAlignment(){const d=currentDraft();if(!d || d.completion)return false;refreshMac();if(!validateParameters(true))return false;pause('');navigate(ALIGN);return true;}
+  function editParameters(){const d=currentDraft();if(!d || d.completion)return;navigate(PARAMS);}
+  function pause(reason='Pausa'){
+    if(timer!==null){clearInterval(timer);timer=null;}if(runningKey && drafts.has(runningKey))drafts.get(runningKey).stopReason=reason;runningKey=null;
+    const d=currentDraft();if(el('fwaSimToggle'))el('fwaSimToggle').textContent=aligned(d)?'Ripeti allineamento':d?.hasStarted?'Riprendi simulazione':'Avvia simulazione';
+    if(el('fwaRunState'))el('fwaRunState').textContent=aligned(d)?'Terminato':d?.hasStarted?'In pausa':'Non avviata';
+  }
+    function drawChart(){
+    const d=currentDraft();if(!d)return;
+    const sample=d.samples.at(-1),n=d.samples.length,prior=d.samples.at(-2);
+    el('fwaSignal').textContent=sample?fmtDb(sample.value):'\u2014';
+    el('fwaPeak').textContent=d.peak==null?'\u2014':fmtDb(d.peak)+' dBm';
+    el('fwaSampleCount').textContent=d.ticks+' campioni';
+    el('fwaChartFrom').textContent=n?String(d.samples[0].n):'1';
+    el('fwaChartTo').textContent=n?String(Math.max(45,d.ticks)):'45 campioni';
+    el('fwaOrientation').value=String(d.position);
+    el('fwaOrientationValue').textContent=(d.position>0?'+':'')+d.position+'\u00b0';
+    const x=i=>38+(i/44)*286, y=v=>18+((-35-v)/60)*132;
+    el('fwaChartLine').setAttribute('points',d.samples.map((s,i)=>x(i).toFixed(2)+','+y(s.value).toFixed(2)).join(' '));
+    el('fwaChartEmpty').setAttribute('visibility',n?'hidden':'visible');
+    const dot=el('fwaChartDot');dot.setAttribute('visibility',n?'visible':'hidden');
+    if(n){dot.setAttribute('cx',String(x(n-1)));dot.setAttribute('cy',String(y(sample.value)));}
+    const peak=el('fwaChartPeak');peak.setAttribute('visibility',n?'visible':'hidden');
+    if(n){peak.setAttribute('y1',String(y(d.peak)));peak.setAttribute('y2',String(y(d.peak)));}
+    el('fwaSignalTrend').textContent=!n?'Il grafico comparir\u00e0 durante la prova.':
+      'Distanza dal picco: '+fmtDb(d.peak-sample.value)+' dB'+(prior?' \u00b7 variazione: '+signed(sample.value-prior.value)+' dB':'');
+    el('fwaChartDesc').textContent=!n?'Nessuna misura reale. Avvia la simulazione.':
+      'Solo dati simulati. Ultimo valore '+fmtDb(sample.value)+' dBm; picco '+fmtDb(d.peak)+' dBm; '+d.ticks+' campioni.';
+    el('fwaSimReset').disabled=!n;
+    el('fwaSimToggle').textContent=aligned(d)?'Ripeti allineamento':timer!==null?'Metti in pausa':d.hasStarted?'Riprendi simulazione':'Avvia simulazione';
+    el('fwaRunState').textContent=aligned(d)?'Terminato':timer!==null?'Demo in corso':d.hasStarted?'In pausa':'Non avviata';
+    updateAlignmentControls();
+  }
+
+  function updateAlignmentControls(){
+    const d=currentDraft(),ok=aligned(d),bad=problems(),last=d?.samples.at(-1);
+    el('fwaFinishAlignment').disabled=ok || !!bad.length || !last || (timer===null && last.position!==d.position);
+    el('fwaAlignmentContinue').disabled=!ok || !!bad.length;
+    el('fwaOrientation').disabled=ok;el('fwaSimReset').disabled=ok || !last;el('fwaSimToggle').disabled=!!bad.length;
+    el(ALIGN).querySelector('.fwa-simulation-controls').hidden=ok;
+    el('fwaAlignmentFinished').hidden=!ok;
+    el('fwaAlignmentFinished').textContent=ok?'Allineamento terminato \u00b7 '+fmtDb(d.alignment.finalDbm)+' dBm (simulati). Premi Continua.':'';
+    el('fwaDraftInfo').textContent=ok?(needsRouter(selectedOrder())?'Passo successivo: selezione del router.':'Solo Antenna: Continua apre direttamente il resoconto.'):last && last.position!==d.position && timer===null?'Rotazione modificata: riprendi la simulazione per acquisire un nuovo campione.':'Acquisisci almeno un campione, poi premi Termina allineamento.';
+  }
+  function renderAlignment(){
+    const d=currentDraft(),o=selectedOrder();if(!d || !o)return;
+    el('fwaAlignTask').textContent=o.id+' | '+o.client+' | '+o.contract;
+    el('fwaAlignModel').textContent=d.model;el('fwaAlignMac').textContent='MAC '+d.mac;
+    el('fwaAlignNode').textContent=nodeFor(d)?.name || 'Nodo non disponibile';el('fwaAlignCluster').textContent=o.clusterId+' \u00b7 demo';
+    error('fwaAlignmentError',problems());drawChart();
+  }
+  function sample(){
+    const d=currentDraft();if(!d || d.completion || aligned(d) || activeId()!==ALIGN || !runningKey || runningKey!==keyFor(d.id) || document.hidden){pause('Anteprima non visibile');return;}
+    if(problems().length){pause('Parametri non validi');renderAlignment();return;}
+    const value=Math.round((-52-Math.min(35,Math.pow(Math.abs(d.position),1.4)*.45)+Math.sin((d.ticks+1)*1.3)*.6)*10)/10;
+    d.ticks++;d.hasStarted=true;d.samples.push({n:d.ticks,value,position:d.position,at:new Date().toISOString()});if(d.samples.length>45)d.samples.shift();d.peak=d.peak===null?value:Math.max(d.peak,value);drawChart();
+  }
+  function toggleSimulation(){
+    const d=currentDraft();if(!d || d.completion || activeId()!==ALIGN || document.hidden)return;
+    if(timer!==null){pause('Pausa manuale');drawChart();return;}
+    if(problems().length){renderAlignment();return;}
+    if(aligned(d)){const p=d.position;clearChart(d);d.position=p;}
+    runningKey=keyFor(d.id);d.stopReason='';timer=setInterval(sample,1000);sample();
+  }
+  function resetSimulation(){const d=currentDraft();if(!d || d.completion || aligned(d))return;const p=d.position;clearChart(d);d.position=p;drawChart();}
+  function finishAlignment(){
+    const d=currentDraft();if(!d || d.completion || aligned(d) || activeId()!==ALIGN)return false;
+    const a=problems();if(!d.samples.length)a.push('Avvia prima la simulazione: serve almeno un campione.');
+    if(a.length){error('fwaAlignmentError',a);return false;}
+    if(d.samples.at(-1).position!==d.position && timer!==null)sample();
+    const last=d.samples.at(-1);if(last.position!==d.position){error('fwaAlignmentError',['Riprendi la simulazione dopo aver cambiato la rotazione.']);return false;}
+    pause('Allineamento terminato');
+    d.alignment=freeze({scope:scope(d),endedAt:new Date().toISOString(),finalDbm:last.value,peakDbm:d.peak,sampleCount:d.ticks,position:last.position,samples:clone(d.samples),simulated:true});
+    d.routerConfirmed=false;error('fwaAlignmentError',[]);drawChart();return true;
+  }
+  function continueAlignment(){
+    const d=currentDraft();if(!d || d.completion)return false;const a=alignmentProblems();error('fwaAlignmentError',a);if(a.length)return false;
+    if(needsRouter(selectedOrder()))navigate(ROUTER);else{d.routerBrand='';d.routerSN='';d.routerModel='';navigate(SUMMARY);}return true;
+  }
+  function fillRouterSerials(){
+    const d=currentDraft(),list=routers().filter(r=>r.brand===d?.routerBrand),s=el('fwaRouterSN');
+    addPlaceholder(s,!d?.routerBrand?'Seleziona prima il marchio':list.length?'Seleziona il numero seriale':'Nessun SN disponibile');
+    for(const r of list)s.add(new Option(r.sn+' \u00b7 '+r.model.replace(/^Router\s+/i,'')+(r.used?' \u00b7 Usato':''),r.sn));
+    if(d && d.routerSN && !list.some(r=>r.sn===d.routerSN && r.model===d.routerModel)){d.routerSN='';d.routerModel='';d.routerConfirmed=false;}
+    s.disabled=!list.length;s.value=d?.routerSN || '';
+    el('fwaRouterSNHelp').textContent=list.length?list.length+' apparati del marchio, dal magazzino FWA. Guasti esclusi.':'Scegli il marchio per leggere i seriali disponibili.';
+    el('fwaRouterModel').value=routerFor(d)?.model || '';el('fwaRouterContinue').disabled=!!alignmentProblems().length || !!routerProblems().length;
+  }
+  function renderRouter(){
+    const o=selectedOrder(),d=currentDraft();if(!o || !d)return;
+    el('fwaRouterActivity').textContent=o.id+' \u00b7 '+o.client;el('fwaRouterInstructions').textContent=o.operatorText;
+    const list=routers(),brands=[...new Set(list.map(r=>r.brand))],s=el('fwaRouterBrand');addPlaceholder(s,brands.length?'Seleziona il marchio':'Nessun router in magazzino');
+    for(const brand of brands)s.add(new Option(brand+' \u00b7 '+list.filter(r=>r.brand===brand).length+' disponibili',brand));
+    if(d.routerBrand && !brands.includes(d.routerBrand)){d.routerBrand='';d.routerSN='';d.routerModel='';d.routerConfirmed=false;}
+    s.disabled=!brands.length;s.value=d.routerBrand;fillRouterSerials();error('fwaRouterError',[...alignmentProblems(),...(!brands.length?routerProblems():[])]);
+  }
+  function changeRouter(field,value){
+    const d=currentDraft();if(!d || d.completion || !needsRouter(selectedOrder()))return;d.routerConfirmed=false;
+    if(field==='brand'){d.routerBrand=value;d.routerSN='';d.routerModel='';}
+    else {const r=routers().find(r=>r.brand===d.routerBrand && r.sn===value);d.routerSN=r?.sn || '';d.routerModel=r?.model || '';}
+    fillRouterSerials();error('fwaRouterError',[]);
+  }
+  function continueRouter(){
+    const d=currentDraft();if(!d || d.completion || !needsRouter(selectedOrder()))return false;
+    const a=[...alignmentProblems(),...routerProblems()];error('fwaRouterError',a);if(a.length)return false;d.routerConfirmed=true;navigate(SUMMARY);return true;
+  }
+  function makeRecord(){
+    const d=currentDraft(),o=selectedOrder();if(!d || !o)return null;
+    const a=candidates(d.model).find(a=>a.mac===d.mac);
+    return {order:clone(o),partner:{code:owner(),name:loggedInPartner?.name || ''},antenna:a?clone(a):{model:d.model,mac:d.mac,wirelessMac:''},cluster:clusterFor(o)?{id:clusterFor(o).id,name:clusterFor(o).name}:null,node:nodeFor(d)?clone(nodeFor(d)):null,router:needsRouter(o)?clone(routerFor(d)):null,routerByCustomer:!needsRouter(o),alignment:d.alignment?clone(d.alignment):null,startedAt:d.startedAt,completedAt:'',simulated:true};
+  }
+  function addCard(host,title,rows){
+    const card=textNode('section','','fwa-report-card');card.append(textNode('h2',title));
+    const list=document.createElement('dl');
+    for(const [k,v] of rows){if(v==null || v==='')continue;const row=document.createElement('div');row.append(textNode('dt',k),textNode('dd',v));list.append(row);}card.append(list);host.append(card);return card;
+  }
+  function reportChart(card,alignment){
+    if(!alignment?.samples.length)return;
+    const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 310 90');svg.setAttribute('role','img');svg.setAttribute('aria-label','Storico simulato salvato alla fine dell\'allineamento');svg.classList.add('fwa-report-chart');
+    const path=document.createElementNS(ns,'polyline');path.classList.add('fwa-chart-line');const data=alignment.samples;
+    path.setAttribute('points',data.map((s,i)=>(12+i*286/Math.max(1,data.length-1)).toFixed(1)+','+(8+(-35-s.value)*65/60).toFixed(1)).join(' '));svg.append(path);
+    if(data.length===1){const dot=document.createElementNS(ns,'circle');dot.setAttribute('cx','12');dot.setAttribute('cy',String(8+(-35-data[0].value)*65/60));dot.setAttribute('r','3');dot.classList.add('fwa-chart-dot');svg.append(dot);}
+    card.append(svg,textNode('p','Ultimi '+data.length+' campioni conservati \u00b7 simulazione, non telemetria reale.','fwa-form-foot'));
+  }
+  function fillReport(host,record){
+    host.replaceChildren();if(!record)return;const r=record,a=r.antenna;
+
+    addCard(host,'Apparati installati \u00b7 prova',[['Antenna',a.model],['MAC antenna',a.mac],['Wireless MAC',a.wirelessMac],['Router',r.routerByCustomer?'Privato: fornito e installato dal cliente':r.router?.model || 'Da selezionare'],['Marchio',r.router?.brand],['SN router',r.router?.sn]]);
+    addCard(host,'Nodo di aggancio \u00b7 demo',[['Cluster',r.cluster?r.cluster.name+' / '+r.cluster.id:'Non disponibile'],['Nodo selezionato',r.node?r.node.name+' / '+r.node.id:'Non disponibile']]);
+    const x=r.alignment;
+    const chart=addCard(host,'Allineamento terminato \u00b7 simulazione',[['Segnale finale',x?fmtDb(x.finalDbm)+' dBm':'Non terminato'],['Picco della prova',x?fmtDb(x.peakDbm)+' dBm':'\u2014'],['Campioni acquisiti',x?String(x.sampleCount):'0'],['Terminato il',x?dateTime(x.endedAt):'\u2014']]);reportChart(chart,x);
+    addCard(host,'Attivit\u00e0 e indicazioni operatore',[['Attivit\u00e0',r.order.id],['Cliente',r.order.client],['Contratto',r.order.contract],['Fornitura',typeLabel(r.order)],['Testo operatore (demo)',r.order.operatorText]]);
+  }
+  function renderSummary(){
+    const d=currentDraft(),o=selectedOrder();if(!d || !o)return;el('fwaSummaryActivity').textContent=o.id+' \u00b7 '+o.client;fillReport(el('fwaSummaryReport'),makeRecord());
+    const a=completionProblems();error('fwaSummaryError',a);el('fwaFinishInstallation').disabled=!!a.length;el('fwaSummaryEditRouter').hidden=!needsRouter(o);
+  }
+  function finishInstallation(){
+    const d=currentDraft();if(!d)return false;if(d.completion){navigate(FINAL);return true;}
+    if(activeId()!==SUMMARY)return false;
+    const a=completionProblems();error('fwaSummaryError',a);if(a.length){el('fwaFinishInstallation').disabled=true;return false;}
+    pause('Installazione completata');const r=makeRecord();r.completedAt=new Date().toISOString();d.completion=freeze(r);navigate(FINAL);return true;
+  }
+  function renderFinal(){
+    const r=currentDraft()?.completion;if(!r)return;
+    el('fwaCompletedActivity').textContent=r.order.id+' \u00b7 '+r.order.client;el('fwaCompletedTime').textContent='Completata in questa sessione il '+dateTime(r.completedAt);
+    fillReport(el('fwaFinalReport'),r);
+  }
+  function safeScreen(id){
+    if(!isOurScreen(id))return id;if(!owner())return 'screen-login';if(id===ROOT)return ROOT;
+    const d=currentDraft();if(!d)return ROOT;if(d.completion && id!==DETAIL)return FINAL;
+    if(id===FINAL)return DETAIL;if([ALIGN,ROUTER,SUMMARY].includes(id) && !d.startedAt)return DETAIL;
+    if([ROUTER,SUMMARY].includes(id) && !aligned(d))return ALIGN;
+    if(id===ROUTER && !needsRouter(selectedOrder()))return SUMMARY;
+    if(id===SUMMARY && needsRouter(selectedOrder()) && !d.routerConfirmed)return ROUTER;return id;
+  }
+  function refreshForScreen(id){
+    id=safeScreen(id);if(id!==ALIGN)pause('Navigazione');
+    ({[ROOT]:renderList,[DETAIL]:renderDetail,[PARAMS]:renderParameters,[ALIGN]:renderAlignment,[ROUTER]:renderRouter,[SUMMARY]:renderSummary,[FINAL]:renderFinal}[id] || (()=>{}))();
+    renderProgress(id);return id;
+  }
+  const baseShow=showScreen;showScreen=function(id){return baseShow.call(this,refreshForScreen(id));};
+  const baseGo=goToScreen;goToScreen=function(id){return baseGo.call(this,refreshForScreen(id));};
+  const baseTop=updateTop;updateTop=function(id){
+    id=safeScreen(id);const result=baseTop.call(this,id);el('tab-installazioni-fwa')?.classList.toggle('active',isOurScreen(id));
+    if(isOurScreen(id)){
+      ['tab-ticket','tab-disinstallazioni','tab-magazzino'].forEach(k=>el(k).classList.remove('active'));
+      el('topbar').style.display='flex';el('topTitle').textContent='Installazioni FWA';
+      el('topSub').textContent=({[ROOT]:assignedOrders().length+' attivit\u00e0 fittizie',[DETAIL]:'Dettaglio attivit\u00e0',[PARAMS]:'Parametri antenna',[ALIGN]:'Allineamento di prova',[ROUTER]:'Router da magazzino',[SUMMARY]:'Resoconto installazione',[FINAL]:'Completata \u00b7 demo'})[id];
+      el('trail').style.display='none';el('bottomBar').style.display='none';el('tabBar').style.display='flex';el('backBtn').classList.toggle('show',id!==ROOT && id!==FINAL);el('logoutBtn').classList.toggle('show',id===ROOT);el('topLogo').style.display='none';
+    }return result;
+  };
+  const baseSwitch=switchTab;switchTab=function(t){return t==='installazioni-fwa'?openRoot():baseSwitch.apply(this,arguments);};
+  const baseLogout=doLogout;doLogout=function(){pause('Disconnessione');selectedOrderId=null;filter='all';return baseLogout.apply(this,arguments);};
+  window.SNA_INSTALLAZIONI_FWA=Object.freeze({version:VERSION,mode:'demo',open:openRoot,activities:()=>assignedOrders().map(o=>({...o,status:stateLabel(drafts.get(keyFor(o.id)))})),availableMacs:m=>candidates(m).map(x=>({...x})),availableRouters:()=>routers().map(r=>({...r})),snapshot:()=>clone({order:selectedOrder(),cluster:clusterFor(selectedOrder()),draft:currentDraft(),running:timer!==null,mode:'demo'})});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause('Scheda non visibile');});window.addEventListener('pagehide',()=>pause('Pagina chiusa'));
+  document.addEventListener('DOMContentLoaded',()=>{
+    el('fwaStartActivity').onclick=startActivity;
+    document.querySelectorAll('[data-fwa-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.fwaFilter;renderList();});
+    el('fwaParamsForm').onsubmit=e=>{e.preventDefault();openAlignment();};
+    el('fwaAntenna').onchange=e=>changeParameter('model',e.target.value);el('fwaMac').onchange=e=>changeParameter('mac',normalize(e.target.value));el('fwaNode').onchange=e=>changeParameter('nodeId',e.target.value);
+    el('fwaOrientation').oninput=e=>{const d=currentDraft();if(!d || d.completion || aligned(d))return;d.position=Math.max(-30,Math.min(30,Number(e.target.value)||0));el('fwaOrientationValue').textContent=(d.position>0?'+':'')+d.position+'\u00b0';updateAlignmentControls();};
+    el('fwaSimToggle').onclick=toggleSimulation;el('fwaSimReset').onclick=resetSimulation;el('fwaEditParameters').onclick=editParameters;el('fwaBackToList').onclick=openRoot;
+    el('fwaFinishAlignment').onclick=finishAlignment;el('fwaAlignmentContinue').onclick=continueAlignment;
+    el('fwaRouterBrand').onchange=e=>changeRouter('brand',e.target.value);el('fwaRouterSN').onchange=e=>changeRouter('sn',e.target.value);
+    el('fwaRouterForm').onsubmit=e=>{e.preventDefault();continueRouter();};el('fwaRouterBack').onclick=()=>navigate(ALIGN);
+    el('fwaSummaryEditRouter').onclick=()=>navigate(ROUTER);el('fwaSummaryEditAlignment').onclick=()=>navigate(ALIGN);el('fwaFinishInstallation').onclick=finishInstallation;el('fwaCompletedBack').onclick=openRoot;
+    const bar=document.querySelector('.preview-bar');if(bar){bar.querySelector('small').textContent='Email disattivate | Installazioni FWA r17';bar.querySelector('strong').title=VERSION;}
+    if(el('buildVersionTag'))el('buildVersionTag').textContent=VERSION;document.documentElement.dataset.snaInstallazioniVersion=VERSION;document.title='SNA - Installazioni FWA - allineamento e router r17';
+  },{once:true});
+})();
+</script>
+<style id="sna-fwa-activities-style">
+/* r16: explicit activity queue, per-activity detail, no new business writes. */
+.fwa-activity-note {font:12px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);padding:10px 12px;border-left:3px solid var(--fwa-orange);background:var(--fwa-surface);border-radius:5px;}
+.fwa-activity-filters {display:flex;align-items:stretch;gap:6px;}
+.fwa-activity-filters button {flex:1;min-width:0;min-height:40px;border:1px solid var(--fwa-line);border-radius:7px;background:var(--fwa-surface);color:var(--fwa-text);font:600 11px/1.3 'Segoe UI',Arial,sans-serif;cursor:pointer;padding:6px 5px;}
+.fwa-activity-filters button b {font:700 11px/1.3 ui-monospace,monospace;margin-left:4px;}
+.fwa-activity-filters button[aria-pressed="true"] {border-color:var(--fwa-orange);background:#EC6707;color:#111619;}
+.fwa-activity-card {gap:7px;border-left:3px solid var(--fwa-orange);cursor:pointer;}
+.fwa-activity-card:hover {border-color:var(--fwa-orange);}
+.fwa-activity-card > p {margin:0;}
+.fwa-activity-card > h3 {font-size:17px;line-height:1.35;margin-top:2px;}
+.fwa-activity-contract {font:12px/1.4 ui-monospace,monospace;color:var(--fwa-text);}
+.fwa-activity-cluster {font:12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-activity-scenario {font:600 11px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-accent);}
+.fwa-activity-card .fwa-primary {margin-top:4px;min-height:41px;padding:8px 11px;font-size:12px;}
+.fwa-order-header .fwa-state {border:1px solid var(--fwa-line);border-radius:5px;padding:4px 6px;font-size:10px;text-align:right;color:var(--fwa-text);}
+.fwa-order-header .fwa-state.working {border-color:var(--fwa-orange);color:var(--fwa-accent);}
+.fwa-activity-client {display:flex;flex-direction:column;gap:7px;border:1px solid var(--fwa-line);border-left:3px solid var(--fwa-orange);padding:14px;border-radius:10px;background:var(--fwa-surface);}
+html[data-sna-theme="siportal"] .fwa-activity-client > h2 {font-size:20px;line-height:1.3;}
+.fwa-activity-client > p {font:12px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);overflow-wrap:anywhere;}
+.fwa-detail-grid {padding:0;margin:0;display:flex;flex-direction:column;gap:0;border:1px solid var(--fwa-line);border-radius:10px;background:var(--fwa-surface);}
+.fwa-detail-grid > div {padding:10px 12px;border-bottom:1px solid var(--fwa-line);}
+.fwa-detail-grid > div:last-child {border-bottom:none;}
+.fwa-detail-grid dt {font:11px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.fwa-detail-grid dd {font:600 12px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);margin:3px 0 0;overflow-wrap:anywhere;}
+.fwa-origin {font-size:9px;letter-spacing:.02em;color:var(--fwa-accent);}
+.fwa-scenario {padding:10px 12px;border:1px solid var(--fwa-line);border-radius:8px;background:var(--fwa-surface);}
+.fwa-scenario strong {font:600 12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-accent);}
+.fwa-scenario p {font:11px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);margin-top:5px;}
+.fwa-activity-checklist {display:flex;flex-direction:column;gap:8px;font:12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-activity-checklist span {display:flex;align-items:center;gap:8px;}
+.fwa-activity-checklist b {display:flex;align-items:center;justify-content:center;flex:0 0 20px;height:20px;border:1px solid var(--fwa-line);border-radius:4px;color:var(--fwa-accent);font:600 11px/1 ui-monospace,monospace;}
+.fwa-step-line {gap:10px;justify-content:space-between;font-size:10px;}
+.fwa-context span {overflow-wrap:anywhere;}
+.fwa-context .fwa-context-scenario {font-family:'Segoe UI',Arial,sans-serif;color:var(--fwa-accent);margin-top:4px;}
+.fwa-alignment-task {font:600 11px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);padding:8px 10px;border:1px solid var(--fwa-line);border-radius:6px;background:var(--fwa-surface);}
+.fwa-empty {font:13px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);padding:16px;border:1px solid var(--fwa-line);border-radius:8px;}
+html[data-sna-theme="siportal"] #screen-installazioni-fwa-dettaglio .fwa-compact-heading h1 {font-size:19px;}
+@media(max-width:350px){.fwa-activity-filters button {font-size:10px;} .fwa-activity-filters button b {margin-left:2px;} .fwa-step-line {font-size:9px;gap:6px;} .fwa-order-header {align-items:flex-start;}.fwa-order-header .fwa-state {max-width:120px;} }
+</style>
+
+<style id="sna-fwa-completion-style">
+/* r17: solid surfaces following the existing White / Black variables. */
+.fwa-operator-note {background:var(--fwa-surface);border:1px solid var(--fwa-line);border-left:3px solid var(--fwa-orange);border-radius:9px;padding:13px;display:flex;flex-direction:column;gap:9px;}
+.fwa-operator-head {display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.fwa-operator-note p {font:13px/1.55 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);white-space:pre-line;}
+.fwa-operator-note small {font:11px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-order-type {font:600 12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-accent);margin-top:3px;}
+.fwa-completion-controls,#fwaRouterForm {display:flex;flex-direction:column;gap:12px;}
+.fwa-completion-controls {padding-top:13px;border-top:1px solid var(--fwa-line);}
+.fwa-completion-controls .fwa-secondary {border-color:var(--fwa-orange);}
+.fwa-done-notice {font:12px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);background:var(--fwa-surface);padding:11px 12px;border:1px solid var(--fwa-line);border-left:3px solid var(--fwa-orange);border-radius:7px;}
+#fwaRouterSN {font-size:12px;font-family:ui-monospace,Consolas,monospace;}
+.fwa-report {display:flex;flex-direction:column;gap:12px;}
+.fwa-report-card {border:1px solid var(--fwa-line);background:var(--fwa-surface);border-radius:10px;padding:13px;}
+.fwa-report-card h2 {margin:0 0 10px!important;}
+.fwa-report-card dl {display:flex;flex-direction:column;gap:9px;}
+.fwa-report-card dl>div {display:flex;flex-direction:column;gap:3px;}
+.fwa-report-card dt {font:11px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-report-card dd {margin:0;color:var(--fwa-text);font:600 13px/1.5 'Segoe UI',Arial,sans-serif;overflow-wrap:anywhere;}
+.fwa-report-chart {display:block;width:100%;height:auto;margin-top:10px;border-bottom:1px solid var(--fwa-line);}
+.fwa-finish-icon {height:48px;width:48px;border-radius:12px;background:var(--fwa-orange);color:#111619;display:flex;align-items:center;justify-content:center;font:700 26px/1 Arial,sans-serif;}
+.fwa-install>.fwa-demo-pill {align-self:flex-start;}
+.fwa-state.done {border-color:var(--fwa-orange)!important;color:var(--fwa-accent)!important;}
+.fwa-activity-filters {display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.fwa-activity-filters button {min-height:40px;}
+html[data-sna-theme="siportal"] .fwa-field input[readonly] {background:var(--fwa-surface)!important;color:var(--fwa-muted)!important;border-style:dashed!important;}
+html[data-sna-theme="siportal"] .fwa-step-line {font-size:10px;gap:6px;}
+html[data-sna-theme="siportal"] .fwa-step-line>span {flex:1;text-align:center;line-height:1.4;}
+@media(max-width:350px){.fwa-operator-note{padding:11px;}.fwa-operator-head{flex-wrap:wrap;}.fwa-report-card{padding:11px;}html[data-sna-theme="siportal"] .fwa-step-line {font-size:9px;gap:4px;} .fwa-order-header .fwa-state{max-width:120px;}}
+</style>
+
 </body>
 </html>
