@@ -1004,6 +1004,35 @@ const SNA_CUSTOMER_CONTACTS=(()=>{
 })();
 </script>
 
+
+<style id="sna-radio-capacity-style">
+/* r24 - One shared sample. Flat surfaces and existing White / Black variables. */
+.fwa-radio-panel {margin-top:11px;padding-top:11px;border-top:1px solid var(--fwa-line);color:var(--fwa-text);min-width:0;}
+.fwa-radio-heading {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;}
+html[data-sna-theme="siportal"] .fwa-radio-heading h2 {font:650 12px/1.4 'Segoe UI',Arial,sans-serif;letter-spacing:0;margin:0;}
+#fwaRadioState {font:600 10px/1.35 'Segoe UI',Arial,sans-serif;color:var(--fwa-accent);text-align:right;}
+.fwa-radio-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.fwa-radio-tile {display:flex;flex-direction:column;gap:3px;border:1px solid var(--fwa-line);background:var(--fwa-field);border-radius:8px;padding:10px;min-width:0;}
+.fwa-radio-direction {color:var(--fwa-accent);font:650 12px/1.3 'Segoe UI',Arial,sans-serif;}
+.fwa-radio-rate {display:flex;gap:5px;align-items:baseline;flex-wrap:wrap;font-variant-numeric:tabular-nums;}
+.fwa-radio-rate strong {color:var(--fwa-text);font:750 26px/1.2 'Segoe UI',Arial,sans-serif;letter-spacing:-.5px;}
+.fwa-radio-rate span {color:var(--fwa-muted);font:11px/1.3 Arial,sans-serif;}
+.fwa-radio-mod-label {color:var(--fwa-muted);font:10px/1.3 'Segoe UI',Arial,sans-serif;margin-top:4px;}
+.fwa-radio-mod {font:650 13px/1.35 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-radio-aggregate {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;border-left:3px solid var(--fwa-orange);background:var(--fwa-field);padding:9px 10px;border-radius:5px;}
+.fwa-radio-aggregate > span {font:600 12px/1.35 'Segoe UI',Arial,sans-serif;}
+.fwa-radio-aggregate b {display:block;font:500 10px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-radio-aggregate > div {display:flex;align-items:baseline;gap:5px;}
+.fwa-radio-aggregate strong {font:750 23px/1.2 'Segoe UI',Arial,sans-serif;letter-spacing:-.4px;color:var(--fwa-accent);font-variant-numeric:tabular-nums;}
+.fwa-radio-aggregate div span {font:11px/1.3 Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-radio-sample {font:10px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);margin:7px 0 5px;}
+.fwa-radio-help {font:11px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-radio-help summary {cursor:pointer;color:var(--fwa-accent);padding:4px 0;}
+.fwa-radio-help p {margin:7px 0;}
+.fwa-radio-panel[data-state="blocked"] #fwaRadioState,.fwa-radio-panel[data-state="stale"] #fwaRadioState {color:var(--fwa-error);}
+@media (max-width:350px) {.fwa-radio-tile {padding:8px;}.fwa-radio-rate strong {font-size:23px;}.fwa-radio-heading {align-items:flex-start;}}
+</style>
+
 </head>
 <body>
 
@@ -1787,7 +1816,7 @@ const SNA_CUSTOMER_CONTACTS=(()=>{
   <div class="fwa-activity-checklist">
     <span><b>1</b>Scegli antenna e MAC dal magazzino</span>
     <span><b>2</b>Scegli il nodo del cluster assegnato</span>
-    <span><b>3</b>Attendi l'aggancio al nodo e la rete disponibile</span>
+    <span><b>3</b>Attiva SM sul Radius, poi verifica aggancio e rete</span>
     <span><b>4</b>Termina l'allineamento e premi Continua</span>
     <span><b>5</b><span id="fwaRouterStepDescription">Scegli router e SN dal magazzino</span></span>
     <span><b>6</b>Controlla il resoconto e termina l'installazione</span>
@@ -1823,8 +1852,13 @@ const SNA_CUSTOMER_CONTACTS=(()=>{
         <small id="fwaNodeHelp">Solo i nodi del cluster assegnato.</small>
       </div>
       <div id="fwaParamError" class="fwa-error" role="alert" hidden></div>
-      <button type="submit" id="fwaToAlignment" class="fwa-primary" disabled>Verifica aggancio <span aria-hidden="true">&rarr;</span></button>
       <p id="fwaParamProgress" class="fwa-form-foot">Completa i parametri per continuare.</p>
+      <div class="fwa-radius-action">
+        <p id="fwaRadiusHelp" class="fwa-form-foot">Prova locale: nessuna richiesta al Radius reale. L'attivazione SM e la verifica dell'aggancio sono due operazioni distinte.</p>
+        <button type="button" id="fwaActivateRadius" class="fwa-primary" disabled aria-describedby="fwaRadiusHelp fwaRadiusStatus">Attiva SM sul Radius</button>
+        <div id="fwaRadiusStatus" class="fwa-radius-status" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <button type="submit" id="fwaToAlignment" class="fwa-primary" disabled hidden>Verifica aggancio <span aria-hidden="true">&rarr;</span></button>
+      </div>
     </form>
   </section>
 
@@ -1879,19 +1913,38 @@ const SNA_CUSTOMER_CONTACTS=(()=>{
     <div class="fwa-telemetry-banner"><span class="fwa-demo-pill">SIMULAZIONE</span><span>Nessuna misura radio reale</span></div>
 <div class="fwa-link-banner" data-fwa-link-banner data-state="idle"><strong data-fwa-link-label>Aggancio da verificare</strong><p data-fwa-link-help>Il puntamento richiede il collegamento al nodo.</p><div class="fwa-button-row"><button type="button" class="fwa-secondary" data-fwa-check-link>Verifica aggancio</button><button type="button" class="fwa-secondary" data-fwa-drop-link>Simula perdita</button></div></div>
     <div class="fwa-graph-card">
-      <div class="fwa-graph-heading"><span>Segnale ricevuto &middot; demo</span><span id="fwaRunState">Non avviata</span></div>
+      <div class="fwa-graph-heading"><span id="fwaRadioReadingLabel">Segnale ricevuto &middot; demo</span><span id="fwaRunState">Non avviata</span></div>
       <div class="fwa-signal-line"><div><strong id="fwaSignal">&mdash;</strong><span>dBm</span></div><div class="fwa-peak"><span>Picco della prova</span><strong id="fwaPeak">&mdash;</strong></div></div>
       <svg id="fwaSignalChart" viewBox="0 0 336 170" role="img" aria-labelledby="fwaChartTitle fwaChartDesc">
         <title id="fwaChartTitle">Grafico di allineamento: segnale RSSI simulato</title>
         <desc id="fwaChartDesc">Nessuna misura reale. Avvia la simulazione per vedere la variazione del segnale.</desc>
-        <g class="fwa-chart-grid"><path d="M38 18H324M38 52H324M38 86H324M38 120H324M38 150H324"/><path d="M38 18V150M110 18V150M182 18V150M254 18V150M324 18V150"/></g>
-        <g class="fwa-chart-ticks"><text x="1" y="22">-35</text><text x="1" y="56">-50</text><text x="1" y="90">-65</text><text x="1" y="124">-80</text><text x="1" y="154">-95</text><text x="38" y="167" id="fwaChartFrom">1</text><text x="324" y="167" text-anchor="end" id="fwaChartTo">45 campioni</text></g>
+        <g class="fwa-chart-grid"><path d="M38 18H324M38 51H324M38 84H324M38 117H324M38 150H324"/><path d="M38 18V150M110 18V150M182 18V150M254 18V150M324 18V150"/></g>
+        <g class="fwa-chart-ticks"><text x="1" y="22">-35</text><text x="1" y="55">-50</text><text x="1" y="88">-65</text><text x="1" y="121">-80</text><text x="1" y="154">-95</text><text x="38" y="167" id="fwaChartFrom">1</text><text x="324" y="167" text-anchor="end" id="fwaChartTo">45 campioni</text></g>
         <line id="fwaChartPeak" x1="38" x2="324" y1="150" y2="150" class="fwa-chart-peak" visibility="hidden"/>
         <polyline id="fwaChartLine" points="" class="fwa-chart-line"/>
         <circle id="fwaChartDot" cx="38" cy="150" r="4" class="fwa-chart-dot" visibility="hidden"/>
         <text id="fwaChartEmpty" x="180" y="86" text-anchor="middle" class="fwa-chart-ticks">Avvia la simulazione</text>
       </svg>
       <div class="fwa-graph-caption"><span><i aria-hidden="true"></i>RSSI simulato &middot; 1 campione/s</span><span id="fwaSampleCount">0 campioni</span></div>
+      
+      <section id="fwaRadioPanel" class="fwa-radio-panel" aria-labelledby="fwaRadioTitle" data-state="empty">
+        <div class="fwa-radio-heading"><h2 id="fwaRadioTitle">Capacit&agrave; radio &middot; demo</h2><span id="fwaRadioState">In attesa</span></div>
+        <div class="fwa-radio-grid">
+          <div class="fwa-radio-tile">
+            <span class="fwa-radio-direction">&#8595; Download</span>
+            <div class="fwa-radio-rate"><strong id="fwaDownload">&mdash;</strong><span>Mbps</span></div>
+            <span class="fwa-radio-mod-label">Modulazione DL</span><strong class="fwa-radio-mod" id="fwaModulationDL">&mdash;</strong>
+          </div>
+          <div class="fwa-radio-tile">
+            <span class="fwa-radio-direction">&#8593; Upload</span>
+            <div class="fwa-radio-rate"><strong id="fwaUpload">&mdash;</strong><span>Mbps</span></div>
+            <span class="fwa-radio-mod-label">Modulazione UL</span><strong class="fwa-radio-mod" id="fwaModulationUL">&mdash;</strong>
+          </div>
+        </div>
+        <div class="fwa-radio-aggregate"><span>Aggregato <b>DL + UL</b></span><div><strong id="fwaAggregate">&mdash;</strong><span>Mbps</span></div></div>
+        <p id="fwaRadioSample" class="fwa-radio-sample">Avvia la simulazione dopo la verifica dell'aggancio.</p>
+        <details class="fwa-radio-help"><summary>Valori simulati, non speed test</summary><p>DL: dal nodo all'antenna. UL: dall'antenna al nodo. L'aggregato &egrave; la somma dei due valori dello stesso campione.</p><p>Questa prova usa una relazione fittizia con la rotazione: non calcola prestazioni reali dai dBm. Modulazioni e Mbps effettivi dovranno arrivare dall'apparato. Non indica la velocit&agrave; del contratto o il traffico del cliente.</p></details>
+      </section>
       <p id="fwaSignalTrend" class="fwa-trend">Il grafico comparir&agrave; durante la prova.</p>
       <div class="fwa-button-row"><button type="button" id="fwaSimToggle" class="fwa-primary">Avvia simulazione</button><button type="button" id="fwaSimReset" class="fwa-secondary" disabled>Azzera</button></div>
     </div>
@@ -1899,7 +1952,7 @@ const SNA_CUSTOMER_CONTACTS=(()=>{
       <div class="fwa-slider-label"><label for="fwaOrientation">Rotazione virtuale</label><output id="fwaOrientationValue" for="fwaOrientation">-25&deg;</output></div>
       <input id="fwaOrientation" type="range" min="-30" max="30" step="1" value="-25" aria-describedby="fwaSimulationHelp">
       <div class="fwa-range-labels"><span>-30&deg;</span><span>0&deg;</span><span>+30&deg;</span></div>
-      <p id="fwaSimulationHelp">Sposta il cursore per provare il grafico. Questi valori non vanno usati per puntare un'antenna reale.</p>
+      <p id="fwaSimulationHelp">Sposta il cursore: segnale, modulazione e capacità demo si aggiornano insieme. Non usare i valori per puntare un'antenna reale.</p>
     </div>
     <div id="fwaAlignmentError" class="fwa-error" role="alert" hidden></div>
     <div class="fwa-completion-controls">
@@ -7840,7 +7893,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
  */
 (() => {
   'use strict';
-  const VERSION='build-2026-10-07-contatti-clienti-r22';
+  const VERSION='build-2026-10-07-modulazione-capacita-r24';
   const ROOT='screen-installazioni-fwa', DETAIL=ROOT+'-dettaglio', PARAMS=ROOT+'-parametri', CONNECT=ROOT+'-aggancio', ALIGN=ROOT+'-allineamento';
   const ROUTER=ROOT+'-router', ZERO=ROOT+'-zero-touch', SUMMARY=ROOT+'-resoconto', FINAL=ROOT+'-completata';
   const MODELS=Object.freeze(['SM450b HG','SM450b MG','ePMP Force 180','ePMP Force 200']);
@@ -8001,7 +8054,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   function freeze(v){if(v && typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v);}return v;}
   function textNode(tag,text,cls){const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;}
   function error(id,messages){const n=el(id);n.hidden=!messages.length;n.textContent=messages.join(' ');}
-  function createDraft(id){return {id,startedAt:'',model:'',mac:'',nodeId:'',position:-25,samples:[],peak:null,ticks:0,hasStarted:false,stopReason:'',alignment:null,connection:blankConnection(),connectionScenario:'success',linkEpoch:0,linkEvents:[],routerBrand:'',routerSN:'',routerModel:'',routerConfirmed:false,zeroTouch:null,alignmentBridge:null,linkReview:null,resumeAfterCheck:null,completion:null};}
+  function createDraft(id){return {id,startedAt:'',model:'',mac:'',nodeId:'',position:-25,samples:[],peak:null,ticks:0,hasStarted:false,stopReason:'',alignment:null,connection:blankConnection(),connectionScenario:'success',linkEpoch:0,linkEvents:[],routerBrand:'',routerSN:'',routerModel:'',routerConfirmed:false,zeroTouch:null,alignmentBridge:null,linkReview:null,resumeAfterCheck:null,radiusActivation:null,completion:null};}
   function currentDraft(){const o=selectedOrder(),k=o && keyFor(o.id);if(!k)return null;if(!drafts.has(k))drafts.set(k,createDraft(o.id));return drafts.get(k);}
   function assignedOrders(){return ORDERS.filter(o=>o.partnerCode===owner());}
   function scope(d=currentDraft(),o=ORDERS.find(o=>o.id===d?.id && o.partnerCode===owner())){return JSON.stringify([owner(),o?.id,o?.installationType,o?.clusterId,d?.model,d?.mac,d?.nodeId]);}
@@ -8042,7 +8095,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   function blankConnection(){return {state:'idle',scope:'',observedNodeId:'',observedMac:'',network:false,startedAt:'',connectedAt:'',lastSeenAt:'',epoch:0,reason:'',simulated:true};}
   function connectionReady(d=currentDraft()){
     const c=d?.connection,age=c?.lastSeenAt ? Date.now()-Date.parse(c.lastSeenAt) : Infinity;
-    return !!(c && c.state==='connected' && c.scope===scope(d) && c.observedMac===d.mac && c.observedNodeId===d.nodeId && c.network===true && age>=0 && age<=LINK_FRESH_MS && !document.hidden);
+    return !!(c && radiusActivated(d) && c.state==='connected' && c.scope===scope(d) && c.observedMac===d.mac && c.observedNodeId===d.nodeId && c.network===true && age>=0 && age<=LINK_FRESH_MS && !document.hidden);
   }
   function connectionProblems(d=currentDraft()){
     if(connectionReady(d))return [];
@@ -8171,6 +8224,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
       const drop=b.querySelector('[data-fwa-drop-link]');if(drop)drop.disabled=!ready;
     });
     if(activeId()===ZERO)renderZero();
+    if(activeId()===ALIGN)renderRadioPanel();
   }
   function renderConnection(){
     const d=currentDraft(),o=selectedOrder();if(!d || !o)return;
@@ -8199,7 +8253,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   }
   function startConnection(){
     const d=currentDraft();if(!d || d.completion || activeId()!==CONNECT || document.hidden)return false;
-    const issues=problems();error('fwaConnectionError',issues);if(issues.length)return false;
+    const issues=[...problems(),...radiusProblems(d)];error('fwaConnectionError',issues);if(issues.length)return false;
     if(['waiting','checking'].includes(d.connection.state) || connectionReady(d))return false;
     stopLinkClock();const rechecking=reviewMatches(d);const p=d.position;if(!rechecking)clearChart(d);d.position=p;
     d.connection={...blankConnection(),scope:scope(d),state:'waiting',startedAt:new Date().toISOString()};
@@ -8230,7 +8284,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   }
   function openConnection(){
     const d=currentDraft();if(!d || d.completion)return false;
-    refreshMac();if(!validateParameters(true)){navigate(PARAMS);return false;}
+    refreshMac();if(!validateParameters(true) || !radiusActivated(d)){navigate(PARAMS);error('fwaParamError',[...problems(),...radiusProblems(d)]);return false;}
     pause('Verifica aggancio');navigate(CONNECT);return true;
   }
   function beginPointing(){
@@ -8271,7 +8325,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     else if(!c.nodes.some(n=>n.id===d.nodeId))a.push('Seleziona un nodo appartenente al cluster assegnato.');
     return a;
   }
-  function alignmentProblems(){const d=currentDraft(),a=[...problems(),...connectionProblems(d)];if(!recordedAlignment(d))a.push('Premi Termina allineamento prima di continuare.');else if(connectionReady(d) && !aligned(d))a.push('Serve un nuovo allineamento dopo il cambio del collegamento.');return a;}
+  function alignmentProblems(){const d=currentDraft(),a=[...problems(),...radiusProblems(d),...connectionProblems(d)];if(!recordedAlignment(d))a.push('Premi Termina allineamento prima di continuare.');else if(connectionReady(d) && !aligned(d))a.push('Serve un nuovo allineamento dopo il cambio del collegamento.');return a;}
   function routerProblems(){
     const d=currentDraft(),o=selectedOrder();if(!needsRouter(o))return [];
     const list=routers();
@@ -8324,7 +8378,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     const path=[ROOT,DETAIL,PARAMS,CONNECT,ALIGN,...(needsRouter(selectedOrder())?[ROUTER]:[]),ZERO,SUMMARY,FINAL];
     history=path.slice(0,path.indexOf(id));goTo(id,0);el(id).scrollTop=0;
   }
-  function startActivity(){const d=currentDraft();if(!d)return false;if(d.completion){navigate(FINAL);return true;}if(!d.startedAt)d.startedAt=new Date().toISOString();navigate(zeroCheckpoint(d) && !zeroDone(d)?ZERO:problems().length?PARAMS:!connectionReady(d)?CONNECT:aligned(d)?needsRouter(selectedOrder())&&!d.routerConfirmed?ROUTER:zeroDone(d)?SUMMARY:ZERO:ALIGN);return true;}
+  function startActivity(){const d=currentDraft();if(!d)return false;if(d.completion){navigate(FINAL);return true;}if(!d.startedAt)d.startedAt=new Date().toISOString();navigate(zeroCheckpoint(d) && !zeroDone(d)?ZERO:problems().length || !radiusActivated(d)?PARAMS:!connectionReady(d)?CONNECT:aligned(d)?needsRouter(selectedOrder())&&!d.routerConfirmed?ROUTER:zeroDone(d)?SUMMARY:ZERO:ALIGN);return true;}
   function addPlaceholder(s,label){s.replaceChildren(new Option(label,''));}
   function refreshMac(){
     const d=currentDraft(),list=d?candidates(d.model):[],s=el('fwaMac');
@@ -8346,8 +8400,54 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     if(d.nodeId && !c?.nodes.some(n=>n.id===d.nodeId)){d.nodeId='';clearChart(d,true);}s.value=d.nodeId;s.disabled=!c?.nodes.length;
     el('fwaNodeHelp').textContent=c?.nodes.length?c.nodes.length+' nodi del cluster '+c.id+' \u00b7 dati demo.':'Servono i nodi della commessa.';validateParameters(false);
   }
-  function validateParameters(show=false){const a=problems();el('fwaToAlignment').disabled=!!a.length;error('fwaParamError',show?a:[]);el('fwaParamProgress').textContent=a[0] || 'Parametri pronti \u00b7 verifica prima l\'aggancio al nodo.';return !a.length;}
-  function clearChart(d,resetLink=false){d.linkReview=null;d.resumeAfterCheck=null;resetZero(d);d.alignmentBridge=null;if(resetLink)resetConnection(d);pause('Parametri modificati');d.samples=[];d.peak=null;d.ticks=0;d.hasStarted=false;d.stopReason='';d.position=-25;d.alignment=null;d.routerConfirmed=false;}
+  // r23: UI-only Radius activation. Never calls a service or marks a radio link ready.
+  // The scope binds the demo confirmation to partner, order, antenna, MAC, cluster and node.
+  function radiusActivated(d=currentDraft()){
+    const r=d?.radiusActivation,o=ORDERS.find(x=>x.id===d?.id && x.partnerCode===owner());
+    return !!(r && o && r.simulated===true && r.scope===scope(d) && !problems(d,o).length);
+  }
+  function radiusProblems(d=currentDraft()){
+    return radiusActivated(d)?[]:['Premi "Attiva SM sul Radius" nella pagina dei dati antenna prima di verificare l\'aggancio.'];
+  }
+  function renderRadius(){
+    const d=currentDraft(),ready=radiusActivated(d),invalid=problems();
+    const button=el('fwaActivateRadius'),status=el('fwaRadiusStatus'),next=el('fwaToAlignment');
+    if(d?.radiusActivation && !ready)d.radiusActivation=null;
+    button.disabled=!!invalid.length || ready || !!d?.completion;
+    button.textContent='Attiva SM sul Radius';
+    status.hidden=!ready;
+    status.replaceChildren();
+    if(ready){
+      status.append(textNode('strong','Attivazione SM simulata completata'),
+        textNode('span',d.model+' - MAC '+d.mac),
+        textNode('span','Nessuna richiesta al Radius reale. Ora verifica l\'aggancio al nodo.'));
+    }
+    next.hidden=!ready;
+    next.disabled=!!invalid.length || !ready || !!d?.completion;
+  }
+  function activateRadius(){
+    const d=currentDraft(),o=selectedOrder();
+    if(!d || !o || d.completion || activeId()!==PARAMS)return false;
+    // Revalidate the inventory and assigned cluster; never trust editable DOM text.
+    refreshMac();
+    if(!validateParameters(true))return false;
+    if(!radiusActivated(d)){
+      const a=candidates(d.model).find(x=>x.mac===d.mac);
+      d.radiusActivation=freeze({scope:scope(d),activityId:o.id,partnerCode:owner(),
+        antennaModel:d.model,mac:d.mac,wirelessMac:a?.wirelessMac || '',clusterId:o.clusterId,
+        nodeId:d.nodeId,activatedAt:new Date().toISOString(),simulated:true,realActivationVerified:false});
+    }
+    validateParameters(false);
+    return true;
+  }
+  function validateParameters(show=false){
+    const a=problems();renderRadius();error('fwaParamError',show?a:[]);
+    el('fwaParamProgress').textContent=a[0] || (radiusActivated()?
+      'Prova Radius completata. Prosegui con Verifica aggancio.':
+      'Parametri pronti. Premi Attiva SM sul Radius.');
+    return !a.length;
+  }
+  function clearChart(d,resetLink=false){d.linkReview=null;d.resumeAfterCheck=null;resetZero(d);d.alignmentBridge=null;if(resetLink){d.radiusActivation=null;resetConnection(d);}pause('Parametri modificati');d.samples=[];d.peak=null;d.ticks=0;d.hasStarted=false;d.stopReason='';d.position=-25;d.alignment=null;d.routerConfirmed=false;}
   function changeParameter(field,value){const d=currentDraft();if(!d || d.completion || d[field]===value)return;clearChart(d,true);d[field]=value;if(field==='model'){d.mac='';refreshMac();}if(field==='mac')refreshWireless();validateParameters(false);}
   function openRoot(){if(!owner())return;suspendConnection('Verifica sospesa: ripeti l\'aggancio al rientro.');pause('Cambio area');history=[ROOT];showScreen(ROOT);updateTop(ROOT);}
   function openOrder(id){if(!owner() || !assignedOrders().some(o=>o.id===id))return false;suspendConnection('Cambio attivit\u00e0: ripetere l\'aggancio.');pause('Cambio attivit\u00e0');selectedOrderId=id;const d=currentDraft();navigate(d.completion?FINAL:DETAIL);return true;}
@@ -8358,7 +8458,85 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     const d=currentDraft();if(el('fwaSimToggle'))el('fwaSimToggle').textContent=aligned(d)?'Ripeti allineamento':d?.hasStarted?'Riprendi simulazione':'Avvia simulazione';
     if(el('fwaRunState'))el('fwaRunState').textContent=aligned(d)?'Terminato':d?.hasStarted?'In pausa':'Non avviata';
   }
-    function drawChart(){
+
+  // r24: EXCLUSIVELY FICTIONAL UI VALUES, not an RSSI-to-throughput RF model.
+  // QAM names follow the model family; thresholds and Mbps are invented for testing.
+  // DL = node -> antenna, UL = antenna -> node; aggregate = rounded DL + UL.
+  // Never use these figures as a speed test, subscriber profile or radio link budget.
+  const RADIO_DEMO_PROFILE=Object.freeze({id:'illustrative-radio-v1',downCeiling:150,upCeiling:50});
+  const RADIO_SAMPLE_FRESH_MS=3000;
+  function simulateRadio(d,point){
+    const clamp=n=>Math.min(1,Math.max(0,n));
+    const quality=clamp((point.value+90)/38);
+    const downQuality=quality,upQuality=clamp(quality*.95-.03);
+    const sm=/^SM450b /.test(d.model);
+    const levels=sm ? [[0,'QPSK'],[.32,'16-QAM'],[.55,'64-QAM'],[.82,'256-QAM']] :
+      [[0,'BPSK'],[.17,'QPSK'],[.40,'16-QAM'],[.68,'64-QAM']];
+    const modulation=q=>levels.reduce((a,x)=>q>=x[0]?x[1]:a,levels[0][1]);
+    const round=n=>Math.round(n*10)/10;
+    const dl=round(RADIO_DEMO_PROFILE.downCeiling*Math.pow(downQuality,1.35));
+    const ul=round(RADIO_DEMO_PROFILE.upCeiling*Math.pow(upQuality,1.35));
+    return {simulated:true,profile:RADIO_DEMO_PROFILE.id,scope:scope(d),
+      activityId:d.id,model:d.model,mac:d.mac,nodeId:d.nodeId,position:point.position,
+      sampleNo:point.n,sampledAt:point.at,connectionEpoch:point.connectionEpoch,rssiDbm:point.value,
+      downlink:{modulation:modulation(downQuality),capacityMbps:dl},
+      uplink:{modulation:modulation(upQuality),capacityMbps:ul},aggregateMbps:round(dl+ul)};
+  }
+  const radioMbps=n=>Number.isFinite(n)?Number(n).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'\u2014';
+  const radioTime=at=>at?new Date(at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
+  function radioDisplay(d=currentDraft()){
+    if(!d)return {state:'empty',label:'In attesa',detail:'Seleziona un\'attivit\u00e0 e completa i parametri.'};
+    const saved=recordedAlignment(d),last=d.samples.at(-1);
+    if(!connectionReady(d))return {state:'blocked',label:'Rete da verificare',
+      detail:saved?'Nessuna lettura attuale. I valori finali salvati sono conservati; riverifica il collegamento.':
+        'Modulazione e capacit\u00e0 non disponibili: verifica prima l\'aggancio al nodo.'};
+    if(saved){
+      const radio=d.alignment.radio;
+      return {state:'saved',label:'Valori salvati',radio,
+        detail:radio?'Campione finale #'+radio.sampleNo+' \u00b7 '+radioTime(radio.sampledAt)+' \u00b7 non \u00e8 una lettura attuale.':'Nessun dato radio salvato per questo allineamento.'};
+    }
+    if(!last?.radio || last.radio.scope!==scope(d) || last.connectionEpoch!==d.connection.epoch)
+      return {state:'empty',label:'In attesa',detail:'Avvia la simulazione per acquisire il primo campione radio.'};
+    if(last.position!==d.position)return {state:'pending',label:'Attesa campione',
+      detail:timer!==null?'Rotazione modificata: attendo il prossimo campione.':'Rotazione modificata: riprendi la simulazione per aggiornare tutti i valori.'};
+    const age=Date.now()-Date.parse(last.at);
+    if(timer!==null && (!Number.isFinite(age) || age<0 || age>RADIO_SAMPLE_FRESH_MS))
+      return {state:'stale',label:'Dati non aggiornati',detail:'Campione radio scaduto: nessuna lettura attuale disponibile.'};
+    return {state:timer!==null?'live':'paused',label:timer!==null?'Demo in corso':'In pausa',radio:last.radio,
+      detail:'Campione #'+last.n+' \u00b7 '+radioTime(last.at)+(timer!==null?' \u00b7 valori sincronizzati.':' \u00b7 ultimo campione, non una lettura attuale.')};
+  }
+  function renderRadioPanel(){
+    const panel=el('fwaRadioPanel');if(!panel)return;
+    const view=radioDisplay(),r=view.radio;
+    panel.dataset.state=view.state;panel.dataset.sampleNo=r?String(r.sampleNo):'';
+    panel.dataset.sampledAt=r?.sampledAt || '';
+    el('fwaRadioState').textContent=view.label;
+    el('fwaRadioSample').textContent=view.detail;
+    el('fwaModulationDL').textContent=r?.downlink.modulation || '\u2014';
+    el('fwaModulationUL').textContent=r?.uplink.modulation || '\u2014';
+    el('fwaDownload').textContent=radioMbps(r?.downlink.capacityMbps);
+    el('fwaUpload').textContent=radioMbps(r?.uplink.capacityMbps);
+    el('fwaAggregate').textContent=radioMbps(r?.aggregateMbps);
+    // Signal and rates must refer to the SAME sample and the SAME state.
+    el('fwaSignal').textContent=r?fmtDb(r.rssiDbm):'\u2014';
+    el('fwaRadioReadingLabel').textContent=view.state==='saved'?'Segnale finale salvato \u00b7 demo':
+      view.state==='paused'?'Ultimo segnale \u00b7 demo':'Segnale ricevuto \u00b7 demo';
+    el('fwaChartDesc').textContent=r ? 'Simulazione. Campione '+r.sampleNo+', segnale '+fmtDb(r.rssiDbm)+
+      ' dBm, modulazione Download '+r.downlink.modulation+', Upload '+r.uplink.modulation+
+      ', capacit\u00e0 Download '+radioMbps(r.downlink.capacityMbps)+' Mbps, Upload '+radioMbps(r.uplink.capacityMbps)+
+      ' Mbps, aggregato '+radioMbps(r.aggregateMbps)+' Mbps. '+view.label :
+      'Nessuna lettura attuale. Un eventuale tracciato visibile contiene solo campioni precedenti. '+view.detail;
+  }
+  function radioReport(host,alignment){
+    const r=alignment?.radio;if(!r)return;
+    addCard(host,'Modulazione e capacit\u00e0 \u00b7 valori finali demo',[
+      ['Modulazione Download (DL)',r.downlink.modulation],['Modulazione Upload (UL)',r.uplink.modulation],
+      ['Download',radioMbps(r.downlink.capacityMbps)+' Mbps'],['Upload',radioMbps(r.uplink.capacityMbps)+' Mbps'],
+      ['Aggregato DL + UL',radioMbps(r.aggregateMbps)+' Mbps'],['Campione finale','#'+r.sampleNo+' \u00b7 '+dateTime(r.sampledAt)],
+      ['Origine dati','Simulazione del collegamento nodo/antenna. Non sono speed test o velocit\u00e0 contrattuali.']]);
+  }
+
+  function drawChart(){
     const d=currentDraft();if(!d)return;
     const sample=d.samples.at(-1),n=d.samples.length,prior=d.samples.at(-2);
     el('fwaSignal').textContent=sample && connectionReady(d)?fmtDb(sample.value):'\u2014';
@@ -8397,7 +8575,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     el('fwaAlignmentFinished').textContent=recordedAlignment(d)?'Allineamento salvato - '+fmtDb(d.alignment.finalDbm)+' dBm (simulati). '+(ok?'Premi Continua.':'Riverifica solo il collegamento per proseguire.'):'';
     el('fwaDraftInfo').textContent=!ready?'Collegamento assente o non verificato: puntamento e Continua bloccati.':ok?(needsRouter(selectedOrder())?'Passo successivo: selezione del router.':'Solo Antenna: Continua apre il riavvio per File Zero Touch.'):last && last.position!==d.position && timer===null?'Rotazione modificata: riprendi la simulazione per acquisire un nuovo campione.':'Acquisisci almeno un campione, poi premi Termina allineamento.';
     if(!ready)el('fwaRunState').textContent='Bloccato';
-    refreshConnectionUI();
+    refreshConnectionUI();renderRadioPanel();
   }
   function renderAlignment(){
     const d=currentDraft(),o=selectedOrder();if(!d || !o)return;
@@ -8410,7 +8588,9 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     const d=currentDraft();if(!d || d.completion || aligned(d) || activeId()!==ALIGN || !runningKey || runningKey!==keyFor(d.id) || document.hidden){pause('Anteprima non visibile');return;}
     if(problems().length || !connectionReady(d)){loseConnection('Collegamento o parametri non validi: puntamento interrotto.','unknown');renderAlignment();return;}
     const value=Math.round((-52-Math.min(35,Math.pow(Math.abs(d.position),1.4)*.45)+Math.sin((d.ticks+1)*1.3)*.6)*10)/10;
-    d.ticks++;d.hasStarted=true;d.samples.push({n:d.ticks,value,position:d.position,at:new Date().toISOString(),connectionEpoch:d.connection.epoch});if(d.samples.length>45)d.samples.shift();d.peak=d.peak===null?value:Math.max(d.peak,value);drawChart();
+    d.ticks++;d.hasStarted=true;
+    const point={n:d.ticks,value,position:d.position,at:new Date().toISOString(),connectionEpoch:d.connection.epoch};
+    point.radio=simulateRadio(d,point);d.samples.push(point);if(d.samples.length>45)d.samples.shift();d.peak=d.peak===null?value:Math.max(d.peak,value);drawChart();
   }
   function toggleSimulation(){
     const d=currentDraft();if(!d || d.completion || activeId()!==ALIGN || document.hidden)return;
@@ -8427,7 +8607,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     if(d.samples.at(-1).position!==d.position && timer!==null)sample();
     const last=d.samples.at(-1);if(last.connectionEpoch!==d.connection.epoch){error('fwaAlignmentError',['Servono nuovi campioni dopo il riaggancio.']);return false;}if(last.position!==d.position){error('fwaAlignmentError',['Riprendi la simulazione dopo aver cambiato la rotazione.']);return false;}
     pause('Allineamento terminato');resetZero(d);d.alignmentBridge=null;
-    d.alignment=freeze({scope:scope(d),connectionEpoch:d.connection.epoch,connection:clone(d.connection),endedAt:new Date().toISOString(),finalDbm:last.value,peakDbm:d.peak,sampleCount:d.ticks,position:last.position,samples:clone(d.samples),simulated:true});
+    d.alignment=freeze({scope:scope(d),connectionEpoch:d.connection.epoch,connection:clone(d.connection),endedAt:new Date().toISOString(),finalDbm:last.value,peakDbm:d.peak,sampleCount:d.ticks,position:last.position,samples:clone(d.samples),radio:clone(last.radio),simulated:true});
     d.routerConfirmed=false;error('fwaAlignmentError',[]);drawChart();return true;
   }
   function continueAlignment(){
@@ -8608,7 +8788,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   function makeRecord(){
     const d=currentDraft(),o=selectedOrder();if(!d || !o)return null;
     const a=candidates(d.model).find(a=>a.mac===d.mac);
-    return {order:clone(o),partner:{code:owner(),name:loggedInPartner?.name || ''},antenna:a?clone(a):{model:d.model,mac:d.mac,wirelessMac:''},cluster:clusterFor(o)?{id:clusterFor(o).id,name:clusterFor(o).name}:null,node:nodeFor(d)?clone(nodeFor(d)):null,router:needsRouter(o)?clone(routerFor(d)):null,routerByCustomer:!needsRouter(o),connection:clone(d.connection),connectionEvents:clone(d.linkEvents),alignment:d.alignment?clone(d.alignment):null,zeroTouch:d.zeroTouch?clone(d.zeroTouch):null,startedAt:d.startedAt,completedAt:'',simulated:true};
+    return {order:clone(o),partner:{code:owner(),name:loggedInPartner?.name || ''},antenna:a?clone(a):{model:d.model,mac:d.mac,wirelessMac:''},cluster:clusterFor(o)?{id:clusterFor(o).id,name:clusterFor(o).name}:null,node:nodeFor(d)?clone(nodeFor(d)):null,router:needsRouter(o)?clone(routerFor(d)):null,routerByCustomer:!needsRouter(o),radiusActivation:d.radiusActivation?clone(d.radiusActivation):null,connection:clone(d.connection),connectionEvents:clone(d.linkEvents),alignment:d.alignment?clone(d.alignment):null,zeroTouch:d.zeroTouch?clone(d.zeroTouch):null,startedAt:d.startedAt,completedAt:'',simulated:true};
   }
   function addCard(host,title,rows){
     const card=textNode('section','','fwa-report-card');card.append(textNode('h2',title));
@@ -8628,9 +8808,10 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     host.append(SNA_CUSTOMER_CONTACTS.create(r.order,false,true));
 
     addCard(host,'Apparati installati \u00b7 prova',[['Antenna',a.model],['MAC antenna',a.mac],['Wireless MAC',a.wirelessMac],['Router',r.routerByCustomer?'Privato: fornito e installato dal cliente':r.router?.model || 'Da selezionare'],['Marchio',r.router?.brand],['SN router',r.router?.sn]]);
+    if(r.radiusActivation)addCard(host,'Attivazione SM sul Radius - demo',[['Esito','Simulazione locale completata'],['MAC antenna',r.radiusActivation.mac],['Confermata il',dateTime(r.radiusActivation.activatedAt)],['Radius reale','Non contattato - nessuna attivazione reale verificata']]);
     addCard(host,'Aggancio al nodo \u00b7 simulazione',[['Cluster',r.cluster?r.cluster.name+' / '+r.cluster.id:'Non disponibile'],['Nodo selezionato',r.node?r.node.name+' / '+r.node.id:'Non disponibile'],['Nodo rilevato (demo)',r.connection?.observedNodeId || 'Non verificato'],['MAC rilevato (demo)',r.connection?.observedMac || 'Non verificato'],['Collegamento rete',r.connection?.network?'Disponibile alla verifica (demo)':'Non disponibile'],['Aggancio verificato il',dateTime(r.connection?.connectedAt)]]);
     const x=r.alignment;
-    const chart=addCard(host,'Allineamento terminato \u00b7 simulazione',[['Segnale finale',x?fmtDb(x.finalDbm)+' dBm':'Non terminato'],['Picco della prova',x?fmtDb(x.peakDbm)+' dBm':'\u2014'],['Campioni acquisiti',x?String(x.sampleCount):'0'],['Terminato il',x?dateTime(x.endedAt):'\u2014']]);reportChart(chart,x);
+    const chart=addCard(host,'Allineamento terminato \u00b7 simulazione',[['Segnale finale',x?fmtDb(x.finalDbm)+' dBm':'Non terminato'],['Picco della prova',x?fmtDb(x.peakDbm)+' dBm':'\u2014'],['Campioni acquisiti',x?String(x.sampleCount):'0'],['Terminato il',x?dateTime(x.endedAt):'\u2014']]);reportChart(chart,x);radioReport(host,x);
     if(r.zeroTouch){addCard(host,'Riavvio antenna - File Zero Touch',[['Operazione','Spegnimento e riaccensione (demo)'],['Riaggancio',r.zeroTouch.state==='done'?'Completato nella simulazione':'Da completare'],['Terminato il',dateTime(r.zeroTouch.completedAt)],['File Zero Touch reale','Ricezione non verificata - nessuna comunicazione con apparati reali']]);}
     addCard(host,'Attivit\u00e0 e indicazioni operatore',[['Attivit\u00e0',r.order.id],['Cliente',r.order.client],['Contratto',r.order.contract],['Fornitura',typeLabel(r.order)],['Testo operatore (demo)',r.order.operatorText]]);
   }
@@ -8654,7 +8835,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     const d=currentDraft();if(!d)return ROOT;if(d.completion && id!==DETAIL)return FINAL;
     if(id===FINAL)return DETAIL;
     if([CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(id) && !d.startedAt)return DETAIL;
-    if([CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(id) && problems().length)return PARAMS;
+    if([CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(id) && (problems().length || !radiusActivated(d)))return PARAMS;
     if(zeroBusy(d))return ZERO;
     if([ZERO,SUMMARY].includes(id) && zeroCheckpoint(d) && d.zeroTouch.state==='interrupted'){
       if(needsRouter(selectedOrder()) && (!d.routerConfirmed || routerProblems().length))return ROUTER;
@@ -8698,6 +8879,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     document.querySelectorAll('[data-fwa-check-link]').forEach(b=>b.onclick=openConnection);
     document.querySelectorAll('[data-fwa-drop-link]').forEach(b=>b.onclick=()=>{if(connectionReady())loseConnection('Perdita di collegamento simulata. Ripeti l\'aggancio e poi acquisisci nuovi campioni.');});
     document.querySelectorAll('[data-fwa-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.fwaFilter;renderList();});
+    el('fwaActivateRadius').onclick=activateRadius;
     el('fwaParamsForm').onsubmit=e=>{e.preventDefault();openAlignment();};
     el('fwaAntenna').onchange=e=>changeParameter('model',e.target.value);el('fwaMac').onchange=e=>changeParameter('mac',normalize(e.target.value));el('fwaNode').onchange=e=>changeParameter('nodeId',e.target.value);
     el('fwaOrientation').oninput=e=>{const d=currentDraft();if(!d || d.completion || aligned(d) || !connectionReady(d))return;d.position=Math.max(-30,Math.min(30,Number(e.target.value)||0));el('fwaOrientationValue').textContent=(d.position>0?'+':'')+d.position+'\u00b0';updateAlignmentControls();};
@@ -8706,8 +8888,8 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     el('fwaRouterBrand').onchange=e=>changeRouter('brand',e.target.value);el('fwaRouterModel').onchange=e=>changeRouter('model',e.target.value);el('fwaRouterSN').onchange=e=>changeRouter('sn',e.target.value);
     el('fwaRouterForm').onsubmit=e=>{e.preventDefault();continueRouter();};el('fwaRouterBack').onclick=()=>navigate(ALIGN);
     el('fwaSummaryEditRouter').onclick=()=>navigate(ROUTER);el('fwaSummaryEditAlignment').onclick=()=>navigate(ALIGN);el('fwaFinishInstallation').onclick=finishInstallation;el('fwaCompletedBack').onclick=openRoot;
-    const bar=document.querySelector('.preview-bar');if(bar){bar.querySelector('small').textContent='Email disattivate | Contatti clienti r22';bar.querySelector('strong').title=VERSION;}
-    if(el('buildVersionTag'))el('buildVersionTag').textContent=VERSION;document.documentElement.dataset.snaInstallazioniVersion=VERSION;document.title='SNA - Contatti clienti - Installazioni e Disinstallazioni r22';
+    const bar=document.querySelector('.preview-bar');if(bar){bar.querySelector('small').textContent='Email disattivate | Radio FWA r24';bar.querySelector('strong').title=VERSION;}
+    if(el('buildVersionTag'))el('buildVersionTag').textContent=VERSION;document.documentElement.dataset.snaInstallazioniVersion=VERSION;document.title='SNA - Modulazione e capacita radio - Installazioni FWA r24';
   },{once:true});
 })();
 </script>
@@ -8876,5 +9058,14 @@ html[data-sna-theme="siportal"] .fwa-link-scenarios select {background:var(--fwa
 })();
 </script>
 
+
+<style id="sna-radius-style">
+/* Solid surfaces using the existing White / Black palette; no layout outside this action. */
+.fwa-radius-action {display:flex;flex-direction:column;gap:12px;flex-shrink:0;}
+.fwa-radius-status {display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--fwa-line);border-left:3px solid var(--fwa-orange);border-radius:8px;background:var(--fwa-surface);color:var(--fwa-text);font:12px/1.5 'Segoe UI',Arial,sans-serif;overflow-wrap:anywhere;}
+.fwa-radius-status strong {color:var(--fwa-accent);font-size:13px;}
+.fwa-radius-action [hidden] {display:none!important;}
+#fwaActivateRadius {min-height:46px;width:100%;}
+</style>
 </body>
 </html>
