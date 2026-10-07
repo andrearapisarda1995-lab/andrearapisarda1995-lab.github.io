@@ -940,6 +940,70 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gestione SNA">
+<style id="sna-customer-contacts-style">
+/* Customer contact presentation only. Solid theme colours; no outbound actions. */
+html[data-sna-theme="siportal"] .sna-customer-contacts {
+  display:block;flex-shrink:0;min-width:0;width:100%;margin:0;
+  border:1px solid var(--line);border-left:3px solid #EC6707;border-radius:9px;
+  background:var(--paper-dim);padding:13px;text-align:left;color:var(--ink);
+}
+html[data-sna-theme="siportal"] .sna-customer-contacts h3 {
+  margin:0 0 10px;font:700 14px/1.4 'Segoe UI',Arial,sans-serif;color:var(--ink);
+}
+html[data-sna-theme="siportal"] .sna-contact-list {margin:0;display:flex;flex-direction:column;gap:10px;}
+html[data-sna-theme="siportal"] .sna-contact-row {display:block;min-width:0;}
+html[data-sna-theme="siportal"] .sna-contact-row dt {
+  display:flex;gap:6px;align-items:center;margin:0 0 3px;font:12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--si-muted,#B5BDC6);
+}
+html[data-sna-theme="siportal"] .sna-contact-row dd {
+  margin:0;min-width:0;color:var(--ink);font:600 13px/1.5 'Segoe UI',Arial,sans-serif;
+  overflow-wrap:anywhere;word-break:normal;user-select:text;
+}
+html[data-sna-theme="siportal"] .sna-contact-badge {
+  font:600 9px/1.3 'Segoe UI',Arial,sans-serif;border:1px solid var(--line);
+  color:var(--si-muted,#B5BDC6);padding:2px 5px;border-radius:4px;white-space:nowrap;
+}
+html[data-sna-theme="siportal"] .sna-customer-contacts.sna-contacts-compact {
+  background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;
+  padding:10px 0 0;
+}
+html[data-sna-theme="siportal"] .sna-contacts-compact .sna-contact-list {gap:6px;}
+html[data-sna-theme="siportal"] .sna-contacts-compact .sna-contact-row dd {font-size:12px;}
+#disinstContacts,#fwaDetailContacts,#disinstFinalContacts {flex-shrink:0;min-width:0;width:100%;}
+#disinstFinalContacts {margin-bottom:12px;}
+</style>
+<script id="sna-customer-contacts-script">
+/* r22: contacts are read from each activity. No sends, storage or operational writes. */
+const SNA_CUSTOMER_CONTACTS=(()=>{
+  'use strict';
+  const value=v=>typeof v==='string'?v.trim():'';
+  function create(record={},compact=false,showCustomer=false){
+    const box=document.createElement('section');
+    box.className='sna-customer-contacts'+(compact?' sna-contacts-compact':'');
+    box.dataset.customerContacts=record.id || '';
+    box.setAttribute('aria-label','Contatti cliente'+(record.client?' - '+record.client:''));
+    if(!compact){const title=document.createElement('h3');title.textContent=showCustomer && record.client?'Contatti - '+record.client:'Contatti cliente';box.append(title);}
+    const list=document.createElement('dl');list.className='sna-contact-list';
+    for(const [field,label] of [['phone','Telefono'],['email','Email']]){
+      const row=document.createElement('div');row.className='sna-contact-row';
+      const key=document.createElement('dt');key.textContent=label;
+      const demo=record[field+'IsDemo']===true;
+      const test=record[field+'IsTest']===true;
+      if(demo || test){const badge=document.createElement('span');badge.className='sna-contact-badge';badge.textContent=demo?'DEMO':'CASELLA DI PROVA';key.append(badge);}
+      const content=document.createElement('dd');content.dataset.contactField=field;
+      content.textContent=value(record[field]) || 'Non disponibile';
+      row.append(key,content);list.append(row);
+    }
+    box.append(list);return box;
+  }
+  function render(host,record,compact=false,showCustomer=false){
+    if(typeof host==='string')host=document.getElementById(host);
+    if(host)host.replaceChildren(create(record,compact,showCustomer));
+  }
+  return Object.freeze({create,render});
+})();
+</script>
+
 </head>
 <body>
 
@@ -1194,6 +1258,7 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
     <div class="eyebrow" id="disinstEyebrow">DISN-0000 · FWA</div>
     <h1 id="disinstAddress">Indirizzo</h1>
     <p class="desc" id="disinstClientLine">Cliente</p>
+    <div id="disinstContacts"></div>
 
     <div class="field">
       <label>Istruzioni</label>
@@ -1706,6 +1771,7 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
     <div class="fwa-order-header"><span id="fwaDetailId"></span><em id="fwaDetailStatus"></em></div>
     <h2 id="fwaDetailClient"></h2><p id="fwaDetailContract"></p><p id="fwaDetailAddress"></p>
   </div>
+  <div id="fwaDetailContacts"></div>
   <dl class="fwa-detail-grid">
     <div><dt>Indicazioni di installazione</dt><dd id="fwaDetailType"></dd></div>
     <div><dt>Partner assegnato</dt><dd id="fwaDetailPartner"></dd></div>
@@ -1721,9 +1787,10 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
   <div class="fwa-activity-checklist">
     <span><b>1</b>Scegli antenna e MAC dal magazzino</span>
     <span><b>2</b>Scegli il nodo del cluster assegnato</span>
-    <span><b>3</b>Termina l'allineamento e premi Continua</span>
-    <span><b>4</b><span id="fwaRouterStepDescription">Scegli router e SN dal magazzino</span></span>
-    <span><b>5</b>Controlla il resoconto e termina l'installazione</span>
+    <span><b>3</b>Attendi l'aggancio al nodo e la rete disponibile</span>
+    <span><b>4</b>Termina l'allineamento e premi Continua</span>
+    <span><b>5</b><span id="fwaRouterStepDescription">Scegli router e SN dal magazzino</span></span>
+    <span><b>6</b>Controlla il resoconto e termina l'installazione</span>
   </div>
   <p class="fwa-form-foot" id="fwaActivityNote">La procedura non configura apparati reali. La bozza rimane separata per questa attività durante la sessione.</p>
 </section>
@@ -1756,9 +1823,52 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
         <small id="fwaNodeHelp">Solo i nodi del cluster assegnato.</small>
       </div>
       <div id="fwaParamError" class="fwa-error" role="alert" hidden></div>
-      <button type="submit" id="fwaToAlignment" class="fwa-primary" disabled>Apri allineamento <span aria-hidden="true">&rarr;</span></button>
+      <button type="submit" id="fwaToAlignment" class="fwa-primary" disabled>Verifica aggancio <span aria-hidden="true">&rarr;</span></button>
       <p id="fwaParamProgress" class="fwa-form-foot">Completa i parametri per continuare.</p>
     </form>
+  </section>
+
+  <section class="screen fwa-install" id="screen-installazioni-fwa-aggancio" aria-labelledby="fwaConnectionTitle">
+    <div class="fwa-step-line"></div>
+    <div class="fwa-compact-heading"><h1 id="fwaConnectionTitle">Aggancio al nodo</h1><span class="fwa-demo-pill">DEMO</span></div>
+    <p class="fwa-alignment-task" id="fwaConnectionTask"></p>
+    <div class="fwa-link-instructions">Orienta l'antenna verso il nodo, accendila e attendi l'aggancio. <strong>Il puntamento si abilita solo dopo il collegamento.</strong></div>
+    <section class="fwa-link-card" id="fwaConnectionCard" data-state="idle">
+      <div class="fwa-link-visual" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m5 3 12 12a8 8 0 0 1-12-12Zm6 6 5-5M9 16l-2 5m5-4 2 4M4 21h14"/></svg>
+        <span class="fwa-link-wire"></span><span class="fwa-link-indicator"></span><span class="fwa-link-wire"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 6 6 22m6-16 6 16M8 17h8M10 11h4M5 9a10 10 0 0 1 0-6m14 6a10 10 0 0 0 0-6M8 8a5 5 0 0 1 0-4m8 4a5 5 0 0 0 0-4"/><circle cx="12" cy="6" r="1.5"/></svg>
+      </div>
+      <div class="fwa-link-state" id="fwaConnectionState" role="status" aria-live="polite">Antenna non agganciata</div>
+      <p class="fwa-link-hint" id="fwaConnectionHint"></p>
+    <div class="fwa-link-actions"><button type="button" id="fwaConnectionStart" class="fwa-primary">Verifica aggancio</button>
+    <button type="button" id="fwaBeginPointing" class="fwa-primary" disabled>Inizia puntamento &rarr;</button></div>
+    <div id="fwaConnectionError" class="fwa-error" role="alert" hidden></div>
+    <p id="fwaPointingLock" class="fwa-form-foot">Puntamento bloccato fino all'aggancio corretto e al collegamento rete.</p>
+
+      <div class="fwa-link-equipment"><strong id="fwaConnectionModel"></strong><span id="fwaConnectionMac"></span></div>
+      <dl class="fwa-link-facts">
+        <div><dt>Nodo atteso</dt><dd id="fwaConnectionExpected"></dd></div>
+        <div><dt>Collegamento rete</dt><dd id="fwaConnectionNetwork">Non disponibile</dd></div>
+      </dl>
+      <details class="fwa-link-details"><summary>Dettagli della verifica</summary><dl class="fwa-link-facts">
+        <div><dt>Nodo rilevato &middot; demo</dt><dd id="fwaConnectionObserved">Nessun nodo rilevato</dd></div>
+        <div><dt>Aggancio radio</dt><dd id="fwaConnectionRadio">Non confermato</dd></div>
+        <div><dt>Ultima verifica</dt><dd id="fwaConnectionSeen">&mdash;</dd></div>
+      </dl></details>
+    </section>
+    <div class="fwa-link-demo" role="note">Prova locale: aggancio e rete sono simulati. Nessun dato viene letto dall'antenna reale.</div>
+    <details class="fwa-link-scenarios"><summary>Scenari di prova</summary>
+      <label for="fwaConnectionScenario">Esito da simulare</label>
+      <select id="fwaConnectionScenario">
+        <option value="success">Aggancio al nodo scelto e rete disponibile</option>
+        <option value="no_signal">Antenna che non si aggancia</option>
+        <option value="wrong_node">Aggancio a un nodo diverso</option>
+        <option value="no_network">Aggancio radio senza collegamento rete</option>
+      </select>
+      <p>La scelta modifica soltanto il simulatore. Non conferma un collegamento reale.</p>
+    </details>
+    <button type="button" id="fwaConnectionBack" class="fwa-secondary">Modifica parametri</button>
   </section>
 
   <section class="screen fwa-install" id="screen-installazioni-fwa-allineamento" aria-labelledby="fwaAlignmentTitle">
@@ -1766,7 +1876,8 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
     <div class="fwa-compact-heading"><h1 id="fwaAlignmentTitle">Allineamento antenna</h1></div>
     <div class="fwa-alignment-task" id="fwaAlignTask"></div>
   <div class="fwa-alignment-context"><div><strong id="fwaAlignModel"></strong><span id="fwaAlignMac"></span></div><div><strong id="fwaAlignNode"></strong><span id="fwaAlignCluster"></span></div></div>
-    <div class="fwa-telemetry-banner"><span class="fwa-demo-pill">SIMULAZIONE</span><span>Nessuna antenna collegata</span></div>
+    <div class="fwa-telemetry-banner"><span class="fwa-demo-pill">SIMULAZIONE</span><span>Nessuna misura radio reale</span></div>
+<div class="fwa-link-banner" data-fwa-link-banner data-state="idle"><strong data-fwa-link-label>Aggancio da verificare</strong><p data-fwa-link-help>Il puntamento richiede il collegamento al nodo.</p><div class="fwa-button-row"><button type="button" class="fwa-secondary" data-fwa-check-link>Verifica aggancio</button><button type="button" class="fwa-secondary" data-fwa-drop-link>Simula perdita</button></div></div>
     <div class="fwa-graph-card">
       <div class="fwa-graph-heading"><span>Segnale ricevuto &middot; demo</span><span id="fwaRunState">Non avviata</span></div>
       <div class="fwa-signal-line"><div><strong id="fwaSignal">&mdash;</strong><span>dBm</span></div><div class="fwa-peak"><span>Picco della prova</span><strong id="fwaPeak">&mdash;</strong></div></div>
@@ -1805,6 +1916,7 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
     <div class="fwa-step-line"></div>
     <div class="fwa-compact-heading"><h1 id="fwaRouterTitle">Installa il router</h1><span class="fwa-demo-pill">DEMO</span></div>
     <p class="fwa-alignment-task" id="fwaRouterActivity"></p>
+<div class="fwa-link-banner" data-fwa-link-banner data-state="idle"><strong data-fwa-link-label>Aggancio da verificare</strong><p data-fwa-link-help>Il puntamento richiede il collegamento al nodo.</p><div class="fwa-button-row"><button type="button" class="fwa-secondary" data-fwa-check-link>Verifica aggancio</button></div></div>
     <section class="fwa-operator-note"><h2>Indicazioni dell'operatore</h2><p id="fwaRouterInstructions"></p></section>
     <form id="fwaRouterForm" novalidate>
       <div class="fwa-field">
@@ -1813,13 +1925,14 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
         <small id="fwaRouterBrandHelp">Solo i marchi con router disponibili nel magazzino FWA.</small>
       </div>
       <div class="fwa-field">
-        <label for="fwaRouterSN"><span>02</span>Numero seriale (SN)</label>
-        <select id="fwaRouterSN" required disabled aria-describedby="fwaRouterSNHelp"><option value="">Seleziona prima il marchio</option></select>
-        <small id="fwaRouterSNHelp">SN e modello provengono dallo stesso apparato in magazzino.</small>
+        <label for="fwaRouterModel"><span>02</span>Modello router</label>
+        <select id="fwaRouterModel" required disabled aria-describedby="fwaRouterModelHelp"><option value="">Seleziona prima il marchio</option></select>
+        <small id="fwaRouterModelHelp">Prima scegli il marchio, poi uno dei suoi modelli disponibili.</small>
       </div>
       <div class="fwa-field">
-        <label for="fwaRouterModel">Modello selezionato <em>Da magazzino</em></label>
-        <input id="fwaRouterModel" type="text" readonly aria-readonly="true" placeholder="Si compila dopo la scelta dell'SN">
+        <label for="fwaRouterSN"><span>03</span>Numero seriale (SN)</label>
+        <select id="fwaRouterSN" required disabled aria-describedby="fwaRouterSNHelp"><option value="">Seleziona prima il modello</option></select>
+        <small id="fwaRouterSNHelp">Solo i seriali del marchio e del modello selezionati.</small>
       </div>
       <div id="fwaRouterError" class="fwa-error" role="alert" hidden></div>
       <button type="submit" id="fwaRouterContinue" class="fwa-primary" disabled>Continua</button>
@@ -1827,13 +1940,41 @@ html[data-sna-motion="off"] .tab-item { transition: none; }
     <button type="button" id="fwaRouterBack" class="fwa-secondary">Torna all'allineamento</button>
     <p class="fwa-form-foot">Nessun costo aggiunto automaticamente. In questa prova il magazzino resta invariato.</p>
   </section>
+  <section class="screen fwa-install" id="screen-installazioni-fwa-zero-touch" aria-labelledby="fwaZeroTitle">
+    <div class="fwa-step-line"></div>
+    <div class="fwa-compact-heading"><h1 id="fwaZeroTitle">Riavvio antenna</h1><span class="fwa-demo-pill">DEMO</span></div>
+    <p class="fwa-alignment-task" id="fwaZeroActivity"></p>
+    <div id="fwaZeroSavedPanel" class="fwa-operator-note" hidden>
+      <h2>Allineamento conservato</h2>
+      <p id="fwaZeroSavedInfo"></p>
+      <button type="button" id="fwaZeroRecheck" class="fwa-primary">Riverifica collegamento (demo)</button>
+    </div>
+    <section class="fwa-zero-notice" aria-label="Avviso File Zero Touch">
+      <div class="fwa-zero-notice-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v9M6.4 5.7a8 8 0 1 0 11.2 0"/></svg><strong>File Zero Touch</strong></div>
+      <p><strong>Spegni e riaccendi l'antenna</strong> per consentire il caricamento del File Zero Touch.</p>
+      <p>Attendi il riaggancio al nodo e il ritorno del collegamento di rete, poi premi <strong>Continua</strong>.</p>
+    </section>
+    <div class="fwa-zero-context"><strong id="fwaZeroModel"></strong><span id="fwaZeroMac"></span><span id="fwaZeroNode"></span></div>
+    <section class="fwa-zero-status" id="fwaZeroStatus" data-state="pending" aria-live="polite" aria-atomic="true">
+      <strong id="fwaZeroState">Riavvio da eseguire</strong>
+      <p id="fwaZeroHint">Nella prova usa il pulsante sotto: nessun comando viene inviato all'antenna.</p>
+    </section>
+    <div id="fwaZeroError" class="fwa-error" role="alert" hidden></div>
+    <button type="button" id="fwaZeroRestart" class="fwa-secondary">Simula spegnimento e riaccensione</button>
+    <button type="button" id="fwaZeroContinue" class="fwa-primary" disabled>Continua</button>
+    <p class="fwa-form-foot" id="fwaZeroSaved">Allineamento e apparati scelti restano conservati durante questo riavvio programmato.</p>
+    <div class="fwa-link-demo" role="note"><strong>Prova locale.</strong> Riavvio e riaggancio sono simulati. La ricezione del File Zero Touch sull'antenna reale non viene verificata.</div>
+    <button type="button" id="fwaZeroBack" class="fwa-secondary">Torna al router</button>
+  </section>
   <section class="screen fwa-install" id="screen-installazioni-fwa-resoconto" aria-labelledby="fwaSummaryTitle">
     <div class="fwa-step-line"></div>
     <div class="fwa-compact-heading"><h1 id="fwaSummaryTitle">Resoconto installazione</h1></div>
     <p class="fwa-alignment-task" id="fwaSummaryActivity"></p>
+<div class="fwa-link-banner" data-fwa-link-banner data-state="idle"><strong data-fwa-link-label>Aggancio da verificare</strong><p data-fwa-link-help>Il puntamento richiede il collegamento al nodo.</p><div class="fwa-button-row"><button type="button" class="fwa-secondary" data-fwa-check-link>Verifica aggancio</button></div></div>
     <div class="fwa-telemetry-banner"><span class="fwa-demo-pill">PROVA LOCALE</span><span>Segnale e nodo di aggancio simulati</span></div>
     <div id="fwaSummaryReport" class="fwa-report"></div>
     <div id="fwaSummaryError" class="fwa-error" role="alert" hidden></div>
+    <button type="button" class="fwa-secondary" id="fwaSummaryEditZero">Rivedi riavvio antenna</button>
     <button type="button" class="fwa-primary" id="fwaFinishInstallation">Fine Installazione</button>
     <div class="fwa-button-row"><button type="button" class="fwa-secondary" id="fwaSummaryEditAlignment">Rivedi allineamento</button><button type="button" class="fwa-secondary" id="fwaSummaryEditRouter">Modifica router</button></div>
     <p class="fwa-form-foot">Fine Installazione registra il resoconto e completa l'attivit&agrave; solo in questa sessione. Non attiva servizi su Sibiz, non scarica apparati e non invia email.</p>
@@ -3190,7 +3331,7 @@ function renderMagazzino(){
 
 // --- Attività di disinstallazione ---
 const DISINSTALLAZIONI = [
-  {id:'DISN-5521', tech:'fwa', client:'Roberto Lombardo', address:'Via Necropoli Grotticelle 8, Siracusa', contratto:'2024W00512', motivoBreve:'Recesso contrattuale', stato:'aperta', email:'andrearapisarda1995@libero.it',
+  {id:'DISN-5521', tech:'fwa', client:'Roberto Lombardo', address:'Via Necropoli Grotticelle 8, Siracusa', contratto:'2024W00512', motivoBreve:'Recesso contrattuale', stato:'aperta', email:'andrearapisarda1995@libero.it', phone:'+39 000 000 5521', phoneIsDemo:true, emailIsTest:true,
     istruzioni: "Disinstallare e ritirare: antenna esterna FWA (SM450b) e router Zyxel EX3501-T0. Ritirare anche l'alimentatore POE.",
     macAtteso: {'SM450b HG':'A42B8F11C034', 'SM450b MG':'A42B8F22D109'},
     // Materiale installato presso il cliente, come risulta dalla commessa nel gestionale (Sibiz)
@@ -3199,7 +3340,7 @@ const DISINSTALLAZIONI = [
       {n:'Router Zyxel EX3501-T0', codice:'S250Y11017730'},
       {n:'Alimentatori POE',       qty:1},
     ]},
-  {id:'DISN-5534', tech:'ftth', client:'Giulia Amenta', address:'Via Tisia 34, Siracusa', contratto:'2023F00287', motivoBreve:'Migrazione altro operatore', stato:'aperta', email:'andrearapisarda1995@libero.it',
+  {id:'DISN-5534', tech:'ftth', client:'Giulia Amenta', address:'Via Tisia 34, Siracusa', contratto:'2023F00287', motivoBreve:'Migrazione altro operatore', stato:'aperta', email:'andrearapisarda1995@libero.it', phone:'+39 000 000 5534', phoneIsDemo:true, emailIsTest:true,
     istruzioni: "Disinstallare e ritirare: ONT Huawei e router Zyxel EX3501-T0.",
     commessa: [
       {n:'ONT Huawei GPON',        codice:'48575443DD076190'},
@@ -3238,6 +3379,10 @@ function renderDisinstallazioniList(){
       <div class="ticket-addr">${d.address}</div>
     </div>
   `).join('');
+  list.querySelectorAll('.ticket-card').forEach(card=>{
+    const d=DISINSTALLAZIONI.find(x=>x.id===card.querySelector('.ticket-id')?.textContent);
+    if(d)card.append(SNA_CUSTOMER_CONTACTS.create(snaDisClosed[d.id]?.ticket || d,true));
+  });
 }
 
 function openDisinstallazione(id){
@@ -3252,6 +3397,7 @@ function openDisinstallazione(id){
   document.getElementById('disinstEyebrow').textContent = d.id + ' · ' + d.tech.toUpperCase();
   document.getElementById('disinstAddress').textContent = d.address;
   document.getElementById('disinstClientLine').innerHTML = 'Cliente: <strong>' + d.client + '</strong> · Contratto n. <strong>' + d.contratto + '</strong>';
+  SNA_CUSTOMER_CONTACTS.render('disinstContacts',d);
   document.getElementById('disinstMotivo').textContent = d.istruzioni;
   document.getElementById('disinstUscitaTecnicaSwitch').classList.add('on');
   document.getElementById('disinstMaterialiEyebrow').textContent = d.id + ' · ' + d.tech.toUpperCase();
@@ -6251,7 +6397,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       'screen-disinstallazione-finale'],
     ['screen-magazzino', 'screen-apparati-possesso'],
     ['screen-magazzino', 'screen-rientro-guasti'],
-    ['screen-installazioni-fwa', 'screen-installazioni-fwa-dettaglio', 'screen-installazioni-fwa-parametri', 'screen-installazioni-fwa-allineamento', 'screen-installazioni-fwa-router', 'screen-installazioni-fwa-resoconto', 'screen-installazioni-fwa-completata']
+    ['screen-installazioni-fwa', 'screen-installazioni-fwa-dettaglio', 'screen-installazioni-fwa-parametri', 'screen-installazioni-fwa-aggancio', 'screen-installazioni-fwa-allineamento', 'screen-installazioni-fwa-router', 'screen-installazioni-fwa-zero-touch', 'screen-installazioni-fwa-resoconto', 'screen-installazioni-fwa-completata']
   ];
   let enabled = true, ready = false, activeMotion = null, directionHint = null;
   try { enabled = localStorage.getItem(STORAGE_KEY) !== 'off'; } catch (_) {}
@@ -7687,16 +7833,16 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
 .fwa-graph-card > .fwa-button-row {margin-top:12px;}
 
 </style>
-<script id="sna-fwa-installations-script">/* Installazioni FWA r17: locally completed demonstration activities.
+<script id="sna-fwa-installations-script">/* Installazioni FWA r21: locally completed demonstration activities.
  * No network, billing, email, PDF changes, provisioning or warehouse writes.
  * Operator instructions and cluster are immutable assignment data (demo Sibiz).
  * Telemetry is explicitly simulated, never an acceptance test of a real link.
  */
 (() => {
   'use strict';
-  const VERSION='build-2026-10-06-installazioni-router-resoconto-r17';
-  const ROOT='screen-installazioni-fwa', DETAIL=ROOT+'-dettaglio', PARAMS=ROOT+'-parametri', ALIGN=ROOT+'-allineamento';
-  const ROUTER=ROOT+'-router', SUMMARY=ROOT+'-resoconto', FINAL=ROOT+'-completata';
+  const VERSION='build-2026-10-07-contatti-clienti-r22';
+  const ROOT='screen-installazioni-fwa', DETAIL=ROOT+'-dettaglio', PARAMS=ROOT+'-parametri', CONNECT=ROOT+'-aggancio', ALIGN=ROOT+'-allineamento';
+  const ROUTER=ROOT+'-router', ZERO=ROOT+'-zero-touch', SUMMARY=ROOT+'-resoconto', FINAL=ROOT+'-completata';
   const MODELS=Object.freeze(['SM450b HG','SM450b MG','ePMP Force 180','ePMP Force 200']);
     const CLUSTERS=Object.freeze([
   {
@@ -7782,8 +7928,12 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     "suggestedModel": "SM450b HG",
     "partnerCode": "8264",
     "installationType": "antenna_router",
-    "operatorText": "Installazione servizio FWA con Antenna e router Siportal. Posizionare e allineare l'antenna sul nodo del cluster assegnato, quindi installare un router prelevato dal magazzino del partner."
-},
+    "operatorText": "Installazione servizio FWA con Antenna e router Siportal. Posizionare e allineare l'antenna sul nodo del cluster assegnato, quindi installare un router prelevato dal magazzino del partner.",
+    "email": "giulia.rinaldi@example.invalid",
+    "phone": "+39 000 000 1001",
+    "emailIsDemo": true,
+    "phoneIsDemo": true
+  },
   {
     "id": "INS-FWA-1002",
     "client": "Marco Ferri",
@@ -7793,8 +7943,12 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     "suggestedModel": "SM450b MG",
     "partnerCode": "8264",
     "installationType": "antenna_only",
-    "operatorText": "Installazione servizio FWA con solo Antenna. Il cliente fornisce e installa privatamente il proprio router. Non fornire un router Siportal; allineare l'antenna sul nodo del cluster assegnato."
-},
+    "operatorText": "Installazione servizio FWA con solo Antenna. Il cliente fornisce e installa privatamente il proprio router. Non fornire un router Siportal; allineare l'antenna sul nodo del cluster assegnato.",
+    "email": "marco.ferri@example.invalid",
+    "phone": "+39 000 000 1002",
+    "emailIsDemo": true,
+    "phoneIsDemo": true
+  },
   {
     "id": "INS-FWA-1003",
     "client": "Elena Conti",
@@ -7804,8 +7958,12 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     "suggestedModel": "ePMP Force 180",
     "partnerCode": "8264",
     "installationType": "antenna_router",
-    "operatorText": "Installazione servizio FWA con Antenna e router Siportal. Dopo il puntamento dell'antenna, scegliere il router dal magazzino e registrare il suo numero seriale nel resoconto."
-},
+    "operatorText": "Installazione servizio FWA con Antenna e router Siportal. Dopo il puntamento dell'antenna, scegliere il router dal magazzino e registrare il suo numero seriale nel resoconto.",
+    "email": "elena.conti@example.invalid",
+    "phone": "+39 000 000 1003",
+    "emailIsDemo": true,
+    "phoneIsDemo": true
+  },
   {
     "id": "INS-FWA-1004",
     "client": "Studio Esempio Srl",
@@ -7815,8 +7973,12 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     "suggestedModel": "ePMP Force 200",
     "partnerCode": "8264",
     "installationType": "antenna_only",
-    "operatorText": "Installazione servizio FWA con solo Antenna. Studio Esempio Srl provvede privatamente al router. L'attivit\u00e0 del partner comprende antenna e allineamento; nessun router Siportal da installare."
-}
+    "operatorText": "Installazione servizio FWA con solo Antenna. Studio Esempio Srl provvede privatamente al router. L'attivit\u00e0 del partner comprende antenna e allineamento; nessun router Siportal da installare.",
+    "email": "studio.esempio@example.invalid",
+    "phone": "+39 000 000 1004",
+    "emailIsDemo": true,
+    "phoneIsDemo": true
+  }
 ].map(o=>Object.freeze(o)));
 
   const drafts=new Map();
@@ -7827,7 +7989,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   const clusterFor=o=>o ? CLUSTERS.find(c=>c.id===o.clusterId) || null : null;
   const keyFor=id=>owner() ? owner()+'|'+id : null;
   const activeId=()=>document.querySelector('.phone > .screen.active')?.id || '';
-  const isOurScreen=id=>[ROOT,DETAIL,PARAMS,ALIGN,ROUTER,SUMMARY,FINAL].includes(id);
+  const isOurScreen=id=>[ROOT,DETAIL,PARAMS,CONNECT,ALIGN,ROUTER,ZERO,SUMMARY,FINAL].includes(id);
   const normalize=v=>normalizzaMacAntenna(v);
   const snKey=v=>String(v == null ? '' : v).trim().toUpperCase();
   const clone=v=>JSON.parse(JSON.stringify(v));
@@ -7839,11 +8001,11 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   function freeze(v){if(v && typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v);}return v;}
   function textNode(tag,text,cls){const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;}
   function error(id,messages){const n=el(id);n.hidden=!messages.length;n.textContent=messages.join(' ');}
-  function createDraft(id){return {id,startedAt:'',model:'',mac:'',nodeId:'',position:-25,samples:[],peak:null,ticks:0,hasStarted:false,stopReason:'',alignment:null,routerBrand:'',routerSN:'',routerModel:'',routerConfirmed:false,completion:null};}
+  function createDraft(id){return {id,startedAt:'',model:'',mac:'',nodeId:'',position:-25,samples:[],peak:null,ticks:0,hasStarted:false,stopReason:'',alignment:null,connection:blankConnection(),connectionScenario:'success',linkEpoch:0,linkEvents:[],routerBrand:'',routerSN:'',routerModel:'',routerConfirmed:false,zeroTouch:null,alignmentBridge:null,linkReview:null,resumeAfterCheck:null,completion:null};}
   function currentDraft(){const o=selectedOrder(),k=o && keyFor(o.id);if(!k)return null;if(!drafts.has(k))drafts.set(k,createDraft(o.id));return drafts.get(k);}
   function assignedOrders(){return ORDERS.filter(o=>o.partnerCode===owner());}
   function scope(d=currentDraft(),o=ORDERS.find(o=>o.id===d?.id && o.partnerCode===owner())){return JSON.stringify([owner(),o?.id,o?.installationType,o?.clusterId,d?.model,d?.mac,d?.nodeId]);}
-  function aligned(d=currentDraft()){return !!(d?.alignment && d.alignment.scope===scope(d));}
+  function aligned(d=currentDraft()){return !!(d?.alignment && d.alignment.scope===scope(d) && (d.alignment.connectionEpoch===d.connection.epoch || bridgedAlignment(d)) && connectionReady(d));}
   function nodeFor(d=currentDraft()){return clusterFor(selectedOrder())?.nodes.find(n=>n.id===d?.nodeId) || null;}
     function candidates(model){
     if(!MODELS.includes(model))return [];
@@ -7870,6 +8032,212 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
       }
     }
     return items;
+  }
+
+  // r19: this is a LOCAL SIMULATOR, not a radio/API integration.
+  // A selected node, a button click or browser Internet access is NOT proof of attachment.
+  // Only a matching antenna/node report + network availability + a fresh sample opens the gate.
+  const LINK_FRESH_MS=6500;
+  let linkTimer=null,linkKey=null,linkGeneration=0;
+  function blankConnection(){return {state:'idle',scope:'',observedNodeId:'',observedMac:'',network:false,startedAt:'',connectedAt:'',lastSeenAt:'',epoch:0,reason:'',simulated:true};}
+  function connectionReady(d=currentDraft()){
+    const c=d?.connection,age=c?.lastSeenAt ? Date.now()-Date.parse(c.lastSeenAt) : Infinity;
+    return !!(c && c.state==='connected' && c.scope===scope(d) && c.observedMac===d.mac && c.observedNodeId===d.nodeId && c.network===true && age>=0 && age<=LINK_FRESH_MS && !document.hidden);
+  }
+  function connectionProblems(d=currentDraft()){
+    if(connectionReady(d))return [];
+    const c=d?.connection;
+    if(c?.state==='wrong_node')return ['Antenna agganciata a un nodo diverso da quello selezionato: puntamento bloccato.'];
+    if(c?.state==='no_network')return ['Nodo rilevato, ma collegamento di rete non disponibile: puntamento bloccato.'];
+    if(c?.state==='lost')return ['Collegamento perso: ripeti l\'aggancio e poi l\'allineamento.'];
+    if(c?.state==='unknown' || c?.state==='connected')return [recordedAlignment(d)?'Allineamento salvato. Stato rete da aggiornare: riverifica il collegamento, senza rifare il puntamento.':'Stato del collegamento non aggiornato: verifica nuovamente l\'aggancio.'];
+    return ['Attendi l\'aggancio dell\'antenna al nodo selezionato e la disponibilit\u00e0 del collegamento di rete.'];
+  }
+  function stopLinkClock(){if(linkTimer!==null)clearInterval(linkTimer);linkTimer=null;linkKey=null;linkGeneration++;}
+  function recordLinkEvent(d,message){d.linkEvents.push({at:new Date().toISOString(),message,simulated:true});if(d.linkEvents.length>20)d.linkEvents.shift();}
+  function invalidateAlignment(d,reason){d.linkReview=null;d.resumeAfterCheck=null;resetZero(d);d.alignmentBridge=null;pause(reason);d.alignment=null;d.routerConfirmed=false;d.stopReason=reason;}
+  function resetConnection(d,reason='Parametri modificati'){
+    if(!d || d.completion)return;
+    if(linkKey===keyFor(d.id))stopLinkClock();
+    d.connection=blankConnection();d.connection.reason=reason;invalidateAlignment(d,reason);
+    if(d.linkEvents.length)recordLinkEvent(d,reason+' - richiesta nuova verifica');
+  }
+
+  // r21: lack of a fresh status is NOT evidence of a lost alignment.
+  // The confirmation is retained only for the same owner/activity/antenna/node.
+  // Fresh matching connection evidence remains mandatory before progressing.
+  function reviewMatches(d=currentDraft()){
+    const r=d?.linkReview;
+    return !!(recordedAlignment(d) && r && r.scope===scope(d) &&
+      r.alignmentEndedAt===d.alignment.endedAt && r.alignmentEpoch===d.alignment.connectionEpoch);
+  }
+  function nextSavedScreen(d=currentDraft()){
+    if(!recordedAlignment(d))return ALIGN;
+    if(needsRouter(selectedOrder()) && (!d.routerConfirmed || routerProblems().length))return ROUTER;
+    return zeroDone(d)?SUMMARY:ZERO;
+  }
+  function markConnectionUnknown(reason){
+    const d=currentDraft();stopLinkClock();
+    if(!d || d.completion || d.connection.state==='idle')return false;
+    if(zeroBusy(d) || (zeroCheckpoint(d) && d.zeroTouch.state==='interrupted'))return interruptZero(reason);
+    const c=d.connection;
+    if(c.scope!==scope(d) || problems().length){
+      c.state='unknown';c.network=false;c.reason=reason;
+      invalidateAlignment(d,reason);recordLinkEvent(d,reason);refreshConnectionUI();return false;
+    }
+    const wasReviewed=reviewMatches(d);
+    const canKeep=recordedAlignment(d) && (wasReviewed ||
+      d.alignment.connectionEpoch===c.epoch || bridgedAlignment(d));
+    if(canKeep && !wasReviewed){
+      d.linkReview={scope:scope(d),alignmentEndedAt:d.alignment.endedAt,
+        alignmentEpoch:d.alignment.connectionEpoch,
+        returnTo:[ALIGN,ROUTER,ZERO,SUMMARY].includes(activeId())?activeId():nextSavedScreen(d),
+        zeroCompletedAt:zeroCheckpoint(d) && d.zeroTouch.state==='done'?d.zeroTouch.completedAt:'',
+        zeroScope:zeroScope(d),requestedAt:new Date().toISOString()};
+    }
+    c.state='unknown';c.network=false;c.reason=reason;
+    pause(reason);
+    recordLinkEvent(d,reason+(canKeep?' Allineamento e router conservati.':''));
+    refreshConnectionUI();
+    if(activeId()===ALIGN){drawChart();error('fwaAlignmentError',connectionProblems(d));}
+    if(activeId()===ROUTER){el('fwaRouterContinue').disabled=true;error('fwaRouterError',connectionProblems(d));}
+    if(activeId()===SUMMARY){el('fwaFinishInstallation').disabled=true;error('fwaSummaryError',connectionProblems(d));}
+    if(activeId()===ZERO)renderZero();
+    return true;
+  }
+  function restoreAlignmentAfterCheck(d){
+    if(!reviewMatches(d) || !connectionReady(d))return false;
+    const r=d.linkReview;
+    d.alignmentBridge={scope:scope(d),alignmentEndedAt:d.alignment.endedAt,
+      sourceEpoch:d.alignment.connectionEpoch,connectionEpoch:d.connection.epoch,
+      reason:'Riverifica positiva dopo sospensione del monitoraggio',simulated:true};
+    if(r.zeroCompletedAt && zeroCheckpoint(d) && d.zeroTouch.state==='done' &&
+      d.zeroTouch.completedAt===r.zeroCompletedAt && zeroScope(d)===r.zeroScope){
+      d.zeroTouch.connectionEpoch=d.connection.epoch;
+    }
+    d.resumeAfterCheck=r.returnTo;d.linkReview=null;
+    recordLinkEvent(d,'Riverifica positiva dello stesso MAC/nodo. Allineamento salvato conservato (demo).');
+    return true;
+  }
+  function loseConnection(reason='Collegamento perso durante la prova',state='lost'){
+    if(state==='unknown')return markConnectionUnknown(reason);
+    const d=currentDraft();stopLinkClock();if(!d || d.completion)return false;
+    if(d.connection.state==='idle')return false;
+    d.connection.state=state;d.connection.network=false;d.connection.reason=reason;
+    invalidateAlignment(d,reason);recordLinkEvent(d,reason);refreshConnectionUI();
+    if(activeId()===ALIGN){drawChart();error('fwaAlignmentError',connectionProblems(d));}
+    if(activeId()===ROUTER){el('fwaRouterContinue').disabled=true;error('fwaRouterError',connectionProblems(d));}
+    if(activeId()===SUMMARY){el('fwaFinishInstallation').disabled=true;error('fwaSummaryError',connectionProblems(d));}
+    if(activeId()===ZERO)renderZero();
+    return true;
+  }
+  function suspendConnection(reason){
+    const d=currentDraft();if(zeroBusy(d) || (zeroCheckpoint(d) && d.zeroTouch.state==='interrupted')){interruptZero(reason);return;}if(d && !d.completion && ['waiting','checking','connected'].includes(d.connection.state))loseConnection(reason,'unknown');
+    else stopLinkClock();
+  }
+  function linkLabel(d=currentDraft()){
+    if(connectionReady(d))return 'Agganciata al nodo scelto';
+    return ({idle:'Antenna non agganciata',waiting:'In attesa di aggancio',checking:'Verifica collegamento rete',wrong_node:'Aggancio al nodo errato',no_network:'Collegamento rete assente',timeout:'Antenna non agganciata',lost:'Collegamento perso',unknown:'Aggancio da verificare',connected:'Aggancio da verificare'})[d?.connection.state] || 'Aggancio da verificare';
+  }
+  function refreshConnectionUI(){
+    const d=currentDraft(),o=selectedOrder();if(!d || !o || d.completion)return;
+    const c=d.connection,ready=connectionReady(d),busy=['waiting','checking'].includes(c.state),invalid=problems(d,o);
+    const label=linkLabel(d),node=nodeFor(d);
+    const observed=clusterFor(o)?.nodes.find(n=>n.id===c.observedNodeId);
+    const paint=ready?'connected':busy?'waiting':c.state==='idle'?'idle':'error';
+    el('fwaConnectionCard').dataset.state=paint;
+    el('fwaConnectionState').textContent=label;
+    el('fwaConnectionExpected').textContent=node ? node.name+' / '+node.id : 'Nodo non selezionato';
+    el('fwaConnectionObserved').textContent=observed ? observed.name+' / '+observed.id : 'Nessun nodo rilevato';
+    el('fwaConnectionRadio').textContent=ready || (c.state==='checking' && !!c.observedNodeId) || c.state==='no_network' ? 'Aggancio radio simulato rilevato' : c.state==='wrong_node' ? 'Nodo diverso da quello richiesto' : 'Aggancio non confermato';
+    el('fwaConnectionNetwork').textContent=ready?'Disponibile (demo)':c.state==='checking'?'In verifica':c.state==='wrong_node'?'Non valida per il nodo scelto':'Non disponibile / non verificata';
+    el('fwaConnectionSeen').textContent=c.lastSeenAt ? dateTime(c.lastSeenAt)+' (demo)' : '\u2014';
+    const hint=ready?'Antenna e nodo corrispondono alla scelta. Il collegamento di rete \u00e8 disponibile nella simulazione: puoi iniziare il puntamento.':busy?(c.state==='waiting'?'Accensione simulata. Attendo che l\'antenna si agganci: il puntamento resta bloccato.':'Nodo scelto rilevato nella simulazione. Attendo la disponibilit\u00e0 della rete prima di sbloccare il puntamento.') : c.reason || 'Monta l\'antenna in direzione del nodo e alimentala. Prima del puntamento occorre verificarne l\'aggancio.';
+    el('fwaConnectionHint').textContent=hint;
+    el('fwaConnectionStart').disabled=busy || ready || !!invalid.length;
+    el('fwaConnectionStart').textContent=busy?'Verifica in corso...':ready?'Aggancio verificato (demo)':'Verifica aggancio';
+    el('fwaConnectionScenario').disabled=busy;
+    el('fwaBeginPointing').disabled=!ready || !!invalid.length;
+    el('fwaBeginPointing').textContent=recordedAlignment(d)?'Riprendi procedura \u2192':'Inizia puntamento \u2192';
+    if(recordedAlignment(d)){
+      el('fwaConnectionStart').textContent=busy?'Riverifica in corso...':ready?'Collegamento riverificato (demo)':'Riverifica collegamento (demo)';
+      el('fwaConnectionHint').textContent=ready?'Stesso MAC e nodo verificati nella simulazione. Allineamento e scelte salvati: puoi riprendere.':busy?'Verifico solo il collegamento. Allineamento concluso e dati del router restano salvati.':'Allineamento conservato. Verifica nuovamente la disponibilit\u00e0 della rete per proseguire; non occorre ripetere il puntamento.';
+    }
+    el('fwaPointingLock').textContent=ready?'Collegamento disponibile nella simulazione':'Avanzamento bloccato fino alla verifica di MAC, nodo e rete.';
+    error('fwaConnectionError',invalid);
+    document.querySelectorAll('[data-fwa-link-banner]').forEach(b=>{
+      b.dataset.state=paint;b.querySelector('[data-fwa-link-label]').textContent=label+' \u00b7 demo';
+      b.querySelector('[data-fwa-link-help]').textContent=ready?'Collegamento monitorato nella simulazione.':recordedAlignment(d)?'Allineamento conservato. Riverifica solo il collegamento per proseguire.':'Puntamento e avanzamento bloccati. Verifica nuovamente l\'aggancio.';
+      const drop=b.querySelector('[data-fwa-drop-link]');if(drop)drop.disabled=!ready;
+    });
+    if(activeId()===ZERO)renderZero();
+  }
+  function renderConnection(){
+    const d=currentDraft(),o=selectedOrder();if(!d || !o)return;
+    if(d.connection.state==='connected' && !connectionReady(d))loseConnection('Verifica scaduta: ripeti l\'aggancio.','unknown');
+    el('fwaConnectionTask').textContent=o.id+' \u00b7 '+o.client;
+    el('fwaConnectionModel').textContent=d.model;
+    el('fwaConnectionMac').textContent='MAC '+d.mac;
+    el('fwaConnectionScenario').value=d.connectionScenario;
+    refreshConnectionUI();
+  }
+  function settleConnection(d,scenario){
+    const c=d.connection,now=new Date().toISOString();
+    if(scenario==='no_signal'){
+      c.state='timeout';c.reason='Nessun aggancio nello scenario di prova. Il puntamento rimane bloccato: controlla montaggio, direzione e alimentazione, poi riprova.';c.network=false;stopLinkClock();
+    } else if(scenario==='wrong_node'){
+      c.state='wrong_node';c.observedMac=d.mac;c.observedNodeId=clusterFor(selectedOrder()).nodes.find(n=>n.id!==d.nodeId)?.id || 'NODO-DEMO-DIVERSO';c.network=false;
+      c.reason='Nella prova l\'antenna ha rilevato un altro nodo. Non \u00e8 sufficiente un aggancio qualsiasi: deve essere quello selezionato.';stopLinkClock();
+    } else if(scenario==='no_network'){
+      c.state='no_network';c.observedMac=d.mac;c.observedNodeId=d.nodeId;c.network=false;
+      c.reason='Aggancio radio simulato presente, ma rete non disponibile. Il puntamento non pu\u00f2 iniziare.';stopLinkClock();
+    } else {
+      c.state='connected';c.observedMac=d.mac;c.observedNodeId=d.nodeId;c.network=true;c.connectedAt=now;c.epoch=++d.linkEpoch;
+      c.reason='Aggancio e collegamento rete verificati nella simulazione.';
+    }
+    c.lastSeenAt=now;if(scenario==='success')restoreAlignmentAfterCheck(d);recordLinkEvent(d,c.reason);refreshConnectionUI();
+  }
+  function startConnection(){
+    const d=currentDraft();if(!d || d.completion || activeId()!==CONNECT || document.hidden)return false;
+    const issues=problems();error('fwaConnectionError',issues);if(issues.length)return false;
+    if(['waiting','checking'].includes(d.connection.state) || connectionReady(d))return false;
+    stopLinkClock();const rechecking=reviewMatches(d);const p=d.position;if(!rechecking)clearChart(d);d.position=p;
+    d.connection={...blankConnection(),scope:scope(d),state:'waiting',startedAt:new Date().toISOString()};
+    const c=d.connection,scenario=d.connectionScenario,key=keyFor(d.id),generation=linkGeneration;
+    linkKey=key;recordLinkEvent(d,rechecking?'Riverifica del collegamento (demo): allineamento conservato.':'Accensione e attesa aggancio simulate');refreshConnectionUI();
+    linkTimer=setInterval(()=>{
+      if(generation!==linkGeneration)return;
+      if(keyFor(selectedOrderId)!==key || currentDraft()!==d){stopLinkClock();return;}
+      if(document.hidden || ![CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(activeId())){suspendConnection('Verifica interrotta: ripetere l\'aggancio al rientro.');return;}
+      if(scope(d)!==c.scope || problems().length){loseConnection('Parametri o disponibilit\u00e0 apparato cambiati: ripeti la verifica.','unknown');return;}
+      if(c.state==='connected'){
+        if(Date.now()-Date.parse(c.lastSeenAt)>LINK_FRESH_MS){loseConnection('Aggiornamenti del collegamento interrotti: ripeti la verifica.','unknown');return;}
+        c.lastSeenAt=new Date().toISOString();refreshConnectionUI();return;
+      }
+      const elapsed=Date.now()-Date.parse(c.startedAt);
+      if(elapsed>=(scenario==='no_signal'?4500:3000)){settleConnection(d,scenario);return;}
+      if(elapsed>=1500 && ['success','no_network'].includes(scenario)){
+        c.state='checking';c.observedMac=d.mac;c.observedNodeId=d.nodeId;c.network=false;c.lastSeenAt=new Date().toISOString();
+      }
+      refreshConnectionUI();
+    },500);
+    return true;
+  }
+  function changeConnectionScenario(value){
+    const d=currentDraft();if(!d || d.completion || activeId()!==CONNECT || ['waiting','checking'].includes(d.connection.state))return;
+    if(!['success','no_signal','wrong_node','no_network'].includes(value) || value===d.connectionScenario)return;
+    d.connectionScenario=value;resetConnection(d,'Scenario cambiato: avvia una nuova verifica simulata.');refreshConnectionUI();
+  }
+  function openConnection(){
+    const d=currentDraft();if(!d || d.completion)return false;
+    refreshMac();if(!validateParameters(true)){navigate(PARAMS);return false;}
+    pause('Verifica aggancio');navigate(CONNECT);return true;
+  }
+  function beginPointing(){
+    const d=currentDraft();if(!d || d.completion || activeId()!==CONNECT)return false;
+    const issues=[...problems(),...connectionProblems()];error('fwaConnectionError',issues);if(issues.length)return false;
+    const target=recordedAlignment(d)?d.resumeAfterCheck || nextSavedScreen(d):ALIGN;
+    d.resumeAfterCheck=null;navigate(target);return true;
   }
 
   function routerBrand(name){if(/zyxel/i.test(name))return 'Zyxel';if(/fritz/i.test(name))return 'Fritz!Box';return name.replace(/^router\s+/i,'').split(/\s+/)[0];}
@@ -7903,17 +8271,19 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     else if(!c.nodes.some(n=>n.id===d.nodeId))a.push('Seleziona un nodo appartenente al cluster assegnato.');
     return a;
   }
-  function alignmentProblems(){const d=currentDraft(),a=problems();if(!aligned(d))a.push('Premi Termina allineamento prima di continuare.');return a;}
+  function alignmentProblems(){const d=currentDraft(),a=[...problems(),...connectionProblems(d)];if(!recordedAlignment(d))a.push('Premi Termina allineamento prima di continuare.');else if(connectionReady(d) && !aligned(d))a.push('Serve un nuovo allineamento dopo il cambio del collegamento.');return a;}
   function routerProblems(){
     const d=currentDraft(),o=selectedOrder();if(!needsRouter(o))return [];
-    if(!routers().length)return ['Nessun router utilizzabile nel magazzino FWA.'];
-    if(!d?.routerBrand || !routers().some(r=>r.brand===d.routerBrand))return ['Seleziona il marchio del router dal magazzino FWA.'];
-    if(!routerFor(d))return ['Seleziona un SN disponibile per il marchio scelto. Se non compare pi\u00f9, scegli un altro apparato.'];
+    const list=routers();
+    if(!list.length)return ['Nessun router utilizzabile nel magazzino FWA.'];
+    if(!d?.routerBrand || !list.some(r=>r.brand===d.routerBrand))return ['Seleziona il marchio del router dal magazzino FWA.'];
+    if(!d.routerModel || !list.some(r=>r.brand===d.routerBrand && r.model===d.routerModel))return ['Seleziona un modello disponibile per il marchio scelto.'];
+    if(!routerFor(d))return ['Seleziona un SN disponibile per il marchio e il modello scelti. Se non compare pi\u00f9, scegli un altro apparato.'];
     return [];
   }
-  function completionProblems(){const a=alignmentProblems();a.push(...routerProblems());if(needsRouter(selectedOrder()) && !currentDraft()?.routerConfirmed)a.push('Conferma il router con Continua.');return a;}
+  function completionProblems(){const a=alignmentProblems();a.push(...routerProblems());if(needsRouter(selectedOrder()) && !currentDraft()?.routerConfirmed)a.push('Conferma il router con Continua.');if(!zeroDone())a.push('Completa il riavvio antenna per File Zero Touch prima di chiudere.');return a;}
   function stage(d){return d?.completion?'done':!d?.startedAt?'new':'working';}
-  function stateLabel(d){return d?.completion?'Completata (demo)':!d?.startedAt?'Da iniziare':aligned(d)?'Allineamento terminato':d.hasStarted?'Allineamento in prova':'In lavorazione';}
+  function stateLabel(d){return d?.completion?'Completata (demo)':!d?.startedAt?'Da iniziare':recordedAlignment(d)?connectionReady(d)?'Allineamento terminato':'Allineamento salvato - rete da verificare':connectionReady(d)?'Antenna agganciata':d.connection?.state==='lost'?'Collegamento perso':['waiting','checking'].includes(d.connection?.state)?'In attesa di aggancio':'In lavorazione';}
   function renderList(){
     const host=el('fwaOrderList');host.replaceChildren();const orders=assignedOrders();
     const count=s=>orders.filter(o=>stage(drafts.get(keyFor(o.id)))===s).length;
@@ -7929,17 +8299,18 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
       const btn=textNode('button',d?.completion?'Vedi resoconto \u2192':d?.startedAt?'Riprendi attivit\u00e0 \u2192':'Apri attivit\u00e0 \u2192','fwa-primary');
       btn.type='button';btn.dataset.fwaOrder=o.id;btn.setAttribute('aria-label','Apri '+o.id+' - '+o.client);btn.onclick=()=>openOrder(o.id);
       card.onclick=e=>{if(!e.target.closest('button'))openOrder(o.id);};
-      card.append(head,textNode('h3',o.client),textNode('p','Contratto '+o.contract,'fwa-activity-contract'),textNode('p',o.address,'fwa-order-detail'),textNode('p',typeLabel(o)+(needsRouter(o)?' \u00b7 fornitura Siportal':' \u00b7 router del cliente'),'fwa-order-type'),textNode('p','Cluster: '+(clusterFor(o)?.name || 'Non disponibile'),'fwa-activity-cluster'),btn);host.append(card);
+      card.append(head,textNode('h3',o.client),textNode('p','Contratto '+o.contract,'fwa-activity-contract'),textNode('p',o.address,'fwa-order-detail'),SNA_CUSTOMER_CONTACTS.create(o,true),textNode('p',typeLabel(o)+(needsRouter(o)?' \u00b7 fornitura Siportal':' \u00b7 router del cliente'),'fwa-order-type'),textNode('p','Cluster: '+(clusterFor(o)?.name || 'Non disponibile'),'fwa-activity-cluster'),btn);host.append(card);
     }
   }
   function renderProgress(id){
     const host=el(id)?.querySelector('.fwa-step-line');if(!host)return;
-    const order=selectedOrder(),steps=[[PARAMS,'Antenna'],[ALIGN,'Allineamento'],...(needsRouter(order)?[[ROUTER,'Router']]:[]),[SUMMARY,'Resoconto']];
+    const order=selectedOrder(),steps=[[PARAMS,'Antenna'],[CONNECT,'Aggancio'],[ALIGN,'Puntamento'],...(needsRouter(order)?[[ROUTER,'Router']]:[]),[ZERO,'Riavvio'],[SUMMARY,'Resoconto']];
     host.replaceChildren(...steps.map(([key,label],i)=>textNode('span',(i+1)+' '+label,key===id || (id===FINAL && key===SUMMARY)?'fwa-step-active':'')));
   }
   function renderDetail(){
     const o=selectedOrder(),d=currentDraft();if(!o || !d)return;const c=clusterFor(o);
     el('fwaDetailId').textContent=o.id;el('fwaDetailClient').textContent=o.client;el('fwaDetailContract').textContent='Contratto '+o.contract;el('fwaDetailAddress').textContent=o.address;
+    SNA_CUSTOMER_CONTACTS.render('fwaDetailContacts',d.completion?.order || o);
     el('fwaDetailStatus').textContent=stateLabel(d);el('fwaDetailStatus').className='fwa-state '+stage(d);
     el('fwaDetailPartner').textContent=o.partnerCode+' - '+(loggedInPartner?.name || 'Partner demo');
     el('fwaDetailCluster').textContent=c?c.id+' / '+c.name:'Non disponibile';el('fwaDetailNodes').textContent=c?.nodes.map(n=>n.name).join(' \u00b7 ') || 'Nessun nodo';
@@ -7949,16 +8320,17 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     el('fwaRouterStepDescription').textContent=needsRouter(o)?'Scegli router e SN dal magazzino':'Nessun router da fornire: lo installa il cliente';
   }
   function navigate(id){
-    const path=[ROOT,DETAIL,PARAMS,ALIGN,...(needsRouter(selectedOrder())?[ROUTER]:[]),SUMMARY,FINAL];
+    id=safeScreen(id);
+    const path=[ROOT,DETAIL,PARAMS,CONNECT,ALIGN,...(needsRouter(selectedOrder())?[ROUTER]:[]),ZERO,SUMMARY,FINAL];
     history=path.slice(0,path.indexOf(id));goTo(id,0);el(id).scrollTop=0;
   }
-  function startActivity(){const d=currentDraft();if(!d)return false;if(d.completion){navigate(FINAL);return true;}if(!d.startedAt)d.startedAt=new Date().toISOString();navigate(aligned(d)?needsRouter(selectedOrder())&&!d.routerConfirmed?ROUTER:SUMMARY:PARAMS);return true;}
+  function startActivity(){const d=currentDraft();if(!d)return false;if(d.completion){navigate(FINAL);return true;}if(!d.startedAt)d.startedAt=new Date().toISOString();navigate(zeroCheckpoint(d) && !zeroDone(d)?ZERO:problems().length?PARAMS:!connectionReady(d)?CONNECT:aligned(d)?needsRouter(selectedOrder())&&!d.routerConfirmed?ROUTER:zeroDone(d)?SUMMARY:ZERO:ALIGN);return true;}
   function addPlaceholder(s,label){s.replaceChildren(new Option(label,''));}
   function refreshMac(){
     const d=currentDraft(),list=d?candidates(d.model):[],s=el('fwaMac');
     addPlaceholder(s,!d?.model?'Seleziona prima l\'antenna':!list.length?'Nessun MAC disponibile':'Seleziona il MAC');
     list.forEach(c=>s.add(new Option(c.mac+' \u00b7 '+(c.used?'Usato funzionante':c.declared?'Gi\u00e0 in possesso':'Nuovo'),c.mac)));
-    if(d && !d.completion && d.mac && !list.some(c=>c.mac===d.mac)){d.mac='';clearChart(d);}
+    if(d && !d.completion && d.mac && !list.some(c=>c.mac===d.mac)){d.mac='';clearChart(d,true);}
     s.disabled=!list.length;s.value=d?.mac || '';
     el('fwaMacHelp').textContent=!d?.model?'Dal magazzino dell\'app, senza separatori.':!list.length?'Nessun apparato utilizzabile per questo modello.':list.length+' MAC disponibili \u00b7 guasti esclusi.';
     refreshWireless();
@@ -7971,15 +8343,15 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     const m=el('fwaAntenna');addPlaceholder(m,'Seleziona il modello');MODELS.forEach(n=>m.add(new Option(n,n)));m.value=d.model;refreshMac();
     const c=clusterFor(o);el('fwaCluster').value=c?c.id+' \u00b7 '+c.name:'Cluster non disponibile';
     const s=el('fwaNode');addPlaceholder(s,c?.nodes.length?'Seleziona il nodo':'Nessun nodo disponibile');for(const n of c?.nodes || [])s.add(new Option(n.name,n.id));
-    if(d.nodeId && !c?.nodes.some(n=>n.id===d.nodeId)){d.nodeId='';clearChart(d);}s.value=d.nodeId;s.disabled=!c?.nodes.length;
+    if(d.nodeId && !c?.nodes.some(n=>n.id===d.nodeId)){d.nodeId='';clearChart(d,true);}s.value=d.nodeId;s.disabled=!c?.nodes.length;
     el('fwaNodeHelp').textContent=c?.nodes.length?c.nodes.length+' nodi del cluster '+c.id+' \u00b7 dati demo.':'Servono i nodi della commessa.';validateParameters(false);
   }
-  function validateParameters(show=false){const a=problems();el('fwaToAlignment').disabled=!!a.length;error('fwaParamError',show?a:[]);el('fwaParamProgress').textContent=a[0] || 'Parametri pronti \u00b7 apri il grafico simulato.';return !a.length;}
-  function clearChart(d){pause('Parametri modificati');d.samples=[];d.peak=null;d.ticks=0;d.hasStarted=false;d.stopReason='';d.position=-25;d.alignment=null;d.routerConfirmed=false;}
-  function changeParameter(field,value){const d=currentDraft();if(!d || d.completion || d[field]===value)return;clearChart(d);d[field]=value;if(field==='model'){d.mac='';refreshMac();}if(field==='mac')refreshWireless();validateParameters(false);}
-  function openRoot(){if(!owner())return;pause('Cambio area');history=[ROOT];showScreen(ROOT);updateTop(ROOT);}
-  function openOrder(id){if(!owner() || !assignedOrders().some(o=>o.id===id))return false;pause('Cambio attivit\u00e0');selectedOrderId=id;const d=currentDraft();navigate(d.completion?FINAL:DETAIL);return true;}
-  function openAlignment(){const d=currentDraft();if(!d || d.completion)return false;refreshMac();if(!validateParameters(true))return false;pause('');navigate(ALIGN);return true;}
+  function validateParameters(show=false){const a=problems();el('fwaToAlignment').disabled=!!a.length;error('fwaParamError',show?a:[]);el('fwaParamProgress').textContent=a[0] || 'Parametri pronti \u00b7 verifica prima l\'aggancio al nodo.';return !a.length;}
+  function clearChart(d,resetLink=false){d.linkReview=null;d.resumeAfterCheck=null;resetZero(d);d.alignmentBridge=null;if(resetLink)resetConnection(d);pause('Parametri modificati');d.samples=[];d.peak=null;d.ticks=0;d.hasStarted=false;d.stopReason='';d.position=-25;d.alignment=null;d.routerConfirmed=false;}
+  function changeParameter(field,value){const d=currentDraft();if(!d || d.completion || d[field]===value)return;clearChart(d,true);d[field]=value;if(field==='model'){d.mac='';refreshMac();}if(field==='mac')refreshWireless();validateParameters(false);}
+  function openRoot(){if(!owner())return;suspendConnection('Verifica sospesa: ripeti l\'aggancio al rientro.');pause('Cambio area');history=[ROOT];showScreen(ROOT);updateTop(ROOT);}
+  function openOrder(id){if(!owner() || !assignedOrders().some(o=>o.id===id))return false;suspendConnection('Cambio attivit\u00e0: ripetere l\'aggancio.');pause('Cambio attivit\u00e0');selectedOrderId=id;const d=currentDraft();navigate(d.completion?FINAL:DETAIL);return true;}
+  function openAlignment(){return openConnection();}
   function editParameters(){const d=currentDraft();if(!d || d.completion)return;navigate(PARAMS);}
   function pause(reason='Pausa'){
     if(timer!==null){clearInterval(timer);timer=null;}if(runningKey && drafts.has(runningKey))drafts.get(runningKey).stopReason=reason;runningKey=null;
@@ -7989,7 +8361,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     function drawChart(){
     const d=currentDraft();if(!d)return;
     const sample=d.samples.at(-1),n=d.samples.length,prior=d.samples.at(-2);
-    el('fwaSignal').textContent=sample?fmtDb(sample.value):'\u2014';
+    el('fwaSignal').textContent=sample && connectionReady(d)?fmtDb(sample.value):'\u2014';
     el('fwaPeak').textContent=d.peak==null?'\u2014':fmtDb(d.peak)+' dBm';
     el('fwaSampleCount').textContent=d.ticks+' campioni';
     el('fwaChartFrom').textContent=n?String(d.samples[0].n):'1';
@@ -8005,6 +8377,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     if(n){peak.setAttribute('y1',String(y(d.peak)));peak.setAttribute('y2',String(y(d.peak)));}
     el('fwaSignalTrend').textContent=!n?'Il grafico comparir\u00e0 durante la prova.':
       'Distanza dal picco: '+fmtDb(d.peak-sample.value)+' dB'+(prior?' \u00b7 variazione: '+signed(sample.value-prior.value)+' dB':'');
+    if(!connectionReady(d))el('fwaSignalTrend').textContent=n?'Collegamento non disponibile. Il tracciato mostra solo campioni precedenti, non letture attuali.':'Puntamento bloccato: manca l\'aggancio verificato al nodo.';
     el('fwaChartDesc').textContent=!n?'Nessuna misura reale. Avvia la simulazione.':
       'Solo dati simulati. Ultimo valore '+fmtDb(sample.value)+' dBm; picco '+fmtDb(d.peak)+' dBm; '+d.ticks+' campioni.';
     el('fwaSimReset').disabled=!n;
@@ -8014,81 +8387,228 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   }
 
   function updateAlignmentControls(){
-    const d=currentDraft(),ok=aligned(d),bad=problems(),last=d?.samples.at(-1);
-    el('fwaFinishAlignment').disabled=ok || !!bad.length || !last || (timer===null && last.position!==d.position);
+    const d=currentDraft(),ok=aligned(d),ready=connectionReady(d),bad=[...problems(),...connectionProblems(d)],last=d?.samples.at(-1);
+    el('fwaFinishAlignment').disabled=ok || !!bad.length || !last || last.connectionEpoch!==d.connection.epoch || (timer===null && last.position!==d.position);
     el('fwaAlignmentContinue').disabled=!ok || !!bad.length;
-    el('fwaOrientation').disabled=ok;el('fwaSimReset').disabled=ok || !last;el('fwaSimToggle').disabled=!!bad.length;
+    el('fwaOrientation').disabled=ok || !ready;el('fwaSimReset').disabled=ok || !last || !ready;el('fwaSimToggle').disabled=!!bad.length;
+    el(ALIGN).dataset.linkReady=String(ready);
     el(ALIGN).querySelector('.fwa-simulation-controls').hidden=ok;
-    el('fwaAlignmentFinished').hidden=!ok;
-    el('fwaAlignmentFinished').textContent=ok?'Allineamento terminato \u00b7 '+fmtDb(d.alignment.finalDbm)+' dBm (simulati). Premi Continua.':'';
-    el('fwaDraftInfo').textContent=ok?(needsRouter(selectedOrder())?'Passo successivo: selezione del router.':'Solo Antenna: Continua apre direttamente il resoconto.'):last && last.position!==d.position && timer===null?'Rotazione modificata: riprendi la simulazione per acquisire un nuovo campione.':'Acquisisci almeno un campione, poi premi Termina allineamento.';
+    el('fwaAlignmentFinished').hidden=!recordedAlignment(d);
+    el('fwaAlignmentFinished').textContent=recordedAlignment(d)?'Allineamento salvato - '+fmtDb(d.alignment.finalDbm)+' dBm (simulati). '+(ok?'Premi Continua.':'Riverifica solo il collegamento per proseguire.'):'';
+    el('fwaDraftInfo').textContent=!ready?'Collegamento assente o non verificato: puntamento e Continua bloccati.':ok?(needsRouter(selectedOrder())?'Passo successivo: selezione del router.':'Solo Antenna: Continua apre il riavvio per File Zero Touch.'):last && last.position!==d.position && timer===null?'Rotazione modificata: riprendi la simulazione per acquisire un nuovo campione.':'Acquisisci almeno un campione, poi premi Termina allineamento.';
+    if(!ready)el('fwaRunState').textContent='Bloccato';
+    refreshConnectionUI();
   }
   function renderAlignment(){
     const d=currentDraft(),o=selectedOrder();if(!d || !o)return;
     el('fwaAlignTask').textContent=o.id+' | '+o.client+' | '+o.contract;
     el('fwaAlignModel').textContent=d.model;el('fwaAlignMac').textContent='MAC '+d.mac;
     el('fwaAlignNode').textContent=nodeFor(d)?.name || 'Nodo non disponibile';el('fwaAlignCluster').textContent=o.clusterId+' \u00b7 demo';
-    error('fwaAlignmentError',problems());drawChart();
+    error('fwaAlignmentError',[...problems(),...connectionProblems()]);drawChart();
   }
   function sample(){
     const d=currentDraft();if(!d || d.completion || aligned(d) || activeId()!==ALIGN || !runningKey || runningKey!==keyFor(d.id) || document.hidden){pause('Anteprima non visibile');return;}
-    if(problems().length){pause('Parametri non validi');renderAlignment();return;}
+    if(problems().length || !connectionReady(d)){loseConnection('Collegamento o parametri non validi: puntamento interrotto.','unknown');renderAlignment();return;}
     const value=Math.round((-52-Math.min(35,Math.pow(Math.abs(d.position),1.4)*.45)+Math.sin((d.ticks+1)*1.3)*.6)*10)/10;
-    d.ticks++;d.hasStarted=true;d.samples.push({n:d.ticks,value,position:d.position,at:new Date().toISOString()});if(d.samples.length>45)d.samples.shift();d.peak=d.peak===null?value:Math.max(d.peak,value);drawChart();
+    d.ticks++;d.hasStarted=true;d.samples.push({n:d.ticks,value,position:d.position,at:new Date().toISOString(),connectionEpoch:d.connection.epoch});if(d.samples.length>45)d.samples.shift();d.peak=d.peak===null?value:Math.max(d.peak,value);drawChart();
   }
   function toggleSimulation(){
     const d=currentDraft();if(!d || d.completion || activeId()!==ALIGN || document.hidden)return;
     if(timer!==null){pause('Pausa manuale');drawChart();return;}
-    if(problems().length){renderAlignment();return;}
+    if(problems().length || !connectionReady(d)){renderAlignment();return;}
     if(aligned(d)){const p=d.position;clearChart(d);d.position=p;}
     runningKey=keyFor(d.id);d.stopReason='';timer=setInterval(sample,1000);sample();
   }
-  function resetSimulation(){const d=currentDraft();if(!d || d.completion || aligned(d))return;const p=d.position;clearChart(d);d.position=p;drawChart();}
+  function resetSimulation(){const d=currentDraft();if(!d || d.completion || aligned(d) || !connectionReady(d))return;const p=d.position;clearChart(d);d.position=p;drawChart();}
   function finishAlignment(){
     const d=currentDraft();if(!d || d.completion || aligned(d) || activeId()!==ALIGN)return false;
-    const a=problems();if(!d.samples.length)a.push('Avvia prima la simulazione: serve almeno un campione.');
+    const a=[...problems(),...connectionProblems(d)];if(!d.samples.length)a.push('Avvia prima la simulazione: serve almeno un campione.');
     if(a.length){error('fwaAlignmentError',a);return false;}
     if(d.samples.at(-1).position!==d.position && timer!==null)sample();
-    const last=d.samples.at(-1);if(last.position!==d.position){error('fwaAlignmentError',['Riprendi la simulazione dopo aver cambiato la rotazione.']);return false;}
-    pause('Allineamento terminato');
-    d.alignment=freeze({scope:scope(d),endedAt:new Date().toISOString(),finalDbm:last.value,peakDbm:d.peak,sampleCount:d.ticks,position:last.position,samples:clone(d.samples),simulated:true});
+    const last=d.samples.at(-1);if(last.connectionEpoch!==d.connection.epoch){error('fwaAlignmentError',['Servono nuovi campioni dopo il riaggancio.']);return false;}if(last.position!==d.position){error('fwaAlignmentError',['Riprendi la simulazione dopo aver cambiato la rotazione.']);return false;}
+    pause('Allineamento terminato');resetZero(d);d.alignmentBridge=null;
+    d.alignment=freeze({scope:scope(d),connectionEpoch:d.connection.epoch,connection:clone(d.connection),endedAt:new Date().toISOString(),finalDbm:last.value,peakDbm:d.peak,sampleCount:d.ticks,position:last.position,samples:clone(d.samples),simulated:true});
     d.routerConfirmed=false;error('fwaAlignmentError',[]);drawChart();return true;
   }
   function continueAlignment(){
     const d=currentDraft();if(!d || d.completion)return false;const a=alignmentProblems();error('fwaAlignmentError',a);if(a.length)return false;
-    if(needsRouter(selectedOrder()))navigate(ROUTER);else{d.routerBrand='';d.routerSN='';d.routerModel='';navigate(SUMMARY);}return true;
+    if(needsRouter(selectedOrder()))navigate(ROUTER);else{d.routerBrand='';d.routerSN='';d.routerModel='';navigate(ZERO);}return true;
   }
+  // r18: three explicit choices sourced from usable FWA stock.
+  // Never infer or auto-select a model from the serial-number dropdown.
   function fillRouterSerials(){
-    const d=currentDraft(),list=routers().filter(r=>r.brand===d?.routerBrand),s=el('fwaRouterSN');
-    addPlaceholder(s,!d?.routerBrand?'Seleziona prima il marchio':list.length?'Seleziona il numero seriale':'Nessun SN disponibile');
-    for(const r of list)s.add(new Option(r.sn+' \u00b7 '+r.model.replace(/^Router\s+/i,'')+(r.used?' \u00b7 Usato':''),r.sn));
-    if(d && d.routerSN && !list.some(r=>r.sn===d.routerSN && r.model===d.routerModel)){d.routerSN='';d.routerModel='';d.routerConfirmed=false;}
-    s.disabled=!list.length;s.value=d?.routerSN || '';
-    el('fwaRouterSNHelp').textContent=list.length?list.length+' apparati del marchio, dal magazzino FWA. Guasti esclusi.':'Scegli il marchio per leggere i seriali disponibili.';
-    el('fwaRouterModel').value=routerFor(d)?.model || '';el('fwaRouterContinue').disabled=!!alignmentProblems().length || !!routerProblems().length;
+    const d=currentDraft(),list=routers().filter(r=>r.brand===d?.routerBrand && r.model===d?.routerModel),s=el('fwaRouterSN');
+    addPlaceholder(s,!d?.routerModel?'Seleziona prima il modello':list.length?'Seleziona il numero seriale':'Nessun SN disponibile');
+    for(const r of list)s.add(new Option(r.sn+(r.used?' \u00b7 Usato funzionante':r.declared?' \u00b7 Gi\u00e0 in possesso':' \u00b7 Nuovo'),r.sn));
+    if(d && d.routerSN && !list.some(r=>r.sn===d.routerSN)){d.routerSN='';d.routerConfirmed=false;resetZero(d);}
+    s.disabled=!d?.routerModel || !list.length;s.value=d?.routerSN || '';
+    el('fwaRouterSNHelp').textContent=!d?.routerModel?'Scegli prima il modello per leggere i suoi seriali.':list.length?list.length+' SN disponibili per questo modello. Guasti esclusi.':'Nessun SN utilizzabile per il modello scelto.';
+    el('fwaRouterContinue').disabled=!!alignmentProblems().length || !!routerProblems().length;
+  }
+  function fillRouterModels(){
+    const d=currentDraft(),list=routers().filter(r=>r.brand===d?.routerBrand),models=[...new Set(list.map(r=>r.model))],s=el('fwaRouterModel');
+    addPlaceholder(s,!d?.routerBrand?'Seleziona prima il marchio':models.length?'Seleziona il modello':'Nessun modello disponibile');
+    for(const model of models)s.add(new Option(model.replace(/^Router\s+/i,''),model));
+    if(d && d.routerModel && !models.includes(d.routerModel)){d.routerModel='';d.routerSN='';d.routerConfirmed=false;resetZero(d);}
+    s.disabled=!d?.routerBrand || !models.length;s.value=d?.routerModel || '';
+    el('fwaRouterModelHelp').textContent=!d?.routerBrand?'Prima scegli il marchio, poi uno dei suoi modelli disponibili.':models.length?models.length+' modelli di '+d.routerBrand+' presenti nel magazzino FWA.':'Nessun modello utilizzabile per questo marchio.';
+    fillRouterSerials();
   }
   function renderRouter(){
     const o=selectedOrder(),d=currentDraft();if(!o || !d)return;
     el('fwaRouterActivity').textContent=o.id+' \u00b7 '+o.client;el('fwaRouterInstructions').textContent=o.operatorText;
     const list=routers(),brands=[...new Set(list.map(r=>r.brand))],s=el('fwaRouterBrand');addPlaceholder(s,brands.length?'Seleziona il marchio':'Nessun router in magazzino');
-    for(const brand of brands)s.add(new Option(brand+' \u00b7 '+list.filter(r=>r.brand===brand).length+' disponibili',brand));
-    if(d.routerBrand && !brands.includes(d.routerBrand)){d.routerBrand='';d.routerSN='';d.routerModel='';d.routerConfirmed=false;}
-    s.disabled=!brands.length;s.value=d.routerBrand;fillRouterSerials();error('fwaRouterError',[...alignmentProblems(),...(!brands.length?routerProblems():[])]);
+    for(const brand of brands)s.add(new Option(brand,brand));
+    if(d.routerBrand && !brands.includes(d.routerBrand)){d.routerBrand='';d.routerSN='';d.routerModel='';d.routerConfirmed=false;resetZero(d);}
+    s.disabled=!brands.length;s.value=d.routerBrand;fillRouterModels();error('fwaRouterError',[...alignmentProblems(),...(!brands.length?routerProblems():[])]);
   }
   function changeRouter(field,value){
-    const d=currentDraft();if(!d || d.completion || !needsRouter(selectedOrder()))return;d.routerConfirmed=false;
-    if(field==='brand'){d.routerBrand=value;d.routerSN='';d.routerModel='';}
-    else {const r=routers().find(r=>r.brand===d.routerBrand && r.sn===value);d.routerSN=r?.sn || '';d.routerModel=r?.model || '';}
-    fillRouterSerials();error('fwaRouterError',[]);
+    const d=currentDraft();if(!d || d.completion || !needsRouter(selectedOrder()))return;
+    const list=routers();
+    if(field==='brand'){
+      const brand=list.some(r=>r.brand===value)?value:'';
+      if(d.routerBrand!==brand){d.routerBrand=brand;d.routerModel='';d.routerSN='';d.routerConfirmed=false;resetZero(d);}
+    } else if(field==='model'){
+      const model=list.some(r=>r.brand===d.routerBrand && r.model===value)?value:'';
+      if(d.routerModel!==model){d.routerModel=model;d.routerSN='';d.routerConfirmed=false;resetZero(d);}
+    } else if(field==='sn'){
+      const r=list.find(r=>r.brand===d.routerBrand && r.model===d.routerModel && r.sn===value);
+      const sn=r?.sn || '';
+      if(d.routerSN!==sn){d.routerSN=sn;d.routerConfirmed=false;resetZero(d);}
+    } else return;
+    el('fwaRouterBrand').value=d.routerBrand;fillRouterModels();error('fwaRouterError',[]);
   }
   function continueRouter(){
-    const d=currentDraft();if(!d || d.completion || !needsRouter(selectedOrder()))return false;
-    const a=[...alignmentProblems(),...routerProblems()];error('fwaRouterError',a);if(a.length)return false;d.routerConfirmed=true;navigate(SUMMARY);return true;
+    const d=currentDraft();if(!d || d.completion || activeId()!==ROUTER || !needsRouter(selectedOrder()))return false;
+    const a=[...alignmentProblems(),...routerProblems()];error('fwaRouterError',a);if(a.length)return false;d.routerConfirmed=true;navigate(ZERO);return true;
   }
+  // r20: a PLANNED reboot has a separate checkpoint. Never manufacture radio telemetry
+  // or a File Zero Touch receipt. Timers below simulate only power/reassociation.
+  let zeroTimer=null,zeroGeneration=0;
+  function zeroScope(d=currentDraft()){
+    const o=ORDERS.find(o=>o.id===d?.id && o.partnerCode===owner());
+    return JSON.stringify([scope(d,o),d?.alignment?.endedAt,needsRouter(o)?[d?.routerBrand,d?.routerModel,d?.routerSN]:null]);
+  }
+  function recordedAlignment(d=currentDraft()){
+    return !!(d?.alignment && d.alignment.scope===scope(d) && d.alignment.sampleCount>0);
+  }
+  function zeroCheckpoint(d=currentDraft()){
+    return !!(recordedAlignment(d) && d.zeroTouch && d.zeroTouch.scope===zeroScope(d) &&
+      d.zeroTouch.alignmentEpoch===d.alignment.connectionEpoch &&
+      ['off','waiting','checking','interrupted','done'].includes(d.zeroTouch.state));
+  }
+  function zeroBusy(d=currentDraft()){return zeroCheckpoint(d) && ['off','waiting','checking'].includes(d.zeroTouch.state);}
+  function zeroDone(d=currentDraft()){
+    return !!(zeroCheckpoint(d) && d.zeroTouch.state==='done' &&
+      d.zeroTouch.connectionEpoch===d.connection.epoch && connectionReady(d));
+  }
+  function bridgedAlignment(d){
+    const b=d?.alignmentBridge;
+    return !!(b && b.scope===scope(d) && b.alignmentEndedAt===d.alignment?.endedAt &&
+      b.sourceEpoch===d.alignment.connectionEpoch && b.connectionEpoch===d.connection.epoch);
+  }
+  function stopZeroClock(){if(zeroTimer!==null)clearInterval(zeroTimer);zeroTimer=null;zeroGeneration++;}
+  function resetZero(d){stopZeroClock();if(d)d.zeroTouch=null;}
+  function interruptZero(reason){
+    const d=currentDraft();if(!d || d.completion || !zeroCheckpoint(d))return false;
+    stopZeroClock();stopLinkClock();d.zeroTouch.state='interrupted';d.zeroTouch.reason=reason;
+    d.connection.state='restarting';d.connection.network=false;d.connection.reason=reason;
+    recordLinkEvent(d,'Riavvio programmato interrotto (demo): '+reason);
+    if(activeId()===ZERO)renderZero();return true;
+  }
+  function zeroPrerequisites(){
+    const d=currentDraft(),a=[...problems(),...routerProblems()];
+    if(!recordedAlignment(d))a.push('Termina prima l\'allineamento.');
+    if(needsRouter(selectedOrder()) && !d?.routerConfirmed)a.push('Conferma marchio, modello e SN del router con Continua.');
+    if(!zeroCheckpoint(d) && !aligned(d))a.push(...connectionProblems(d));
+    return a;
+  }
+  function renderZero(){
+    const d=currentDraft(),o=selectedOrder();if(!d || !o)return;
+    const z=zeroCheckpoint(d)?d.zeroTouch:null,state=z?.state || 'pending',busy=zeroBusy(d),ready=zeroDone(d);
+    const messages={
+      pending:['Riavvio da eseguire','Per proseguire, completa la prova di spegnimento e riaccensione dell\'antenna.'],
+      off:['Antenna spenta \u00b7 simulazione','Collegamento temporaneamente assente. Allineamento e apparati scelti sono conservati.'],
+      waiting:['Antenna riaccesa \u00b7 attesa aggancio','Attendo il riaggancio al nodo selezionato nella simulazione.'],
+      checking:['Nodo rilevato \u00b7 verifica rete','La rete deve tornare disponibile prima di proseguire al resoconto.'],
+      interrupted:['Prova di riavvio da ripetere',z?.reason || 'Il riavvio simulato non \u00e8 stato completato. Ripeti la prova.'],
+      done:['Riavvio completato \u00b7 simulazione','Riaggancio al nodo e rete disponibili nella prova. Puoi continuare al resoconto.']
+    };
+    el('fwaZeroActivity').textContent=o.id+' \u00b7 '+o.client;
+    el('fwaZeroModel').textContent=d.model;el('fwaZeroMac').textContent='MAC '+d.mac;
+    el('fwaZeroNode').textContent='Nodo: '+(nodeFor(d)?.name || d.nodeId);
+    el('fwaZeroStatus').dataset.state=state;
+    const msg=state==='done' && !ready?['Riavvio conservato - rete da riverificare','Lo spegnimento e la riaccensione sono registrati. Serve solo aggiornare lo stato del collegamento, senza ripetere il riavvio.']:messages[state] || messages.pending;
+    el('fwaZeroState').textContent=msg[0];el('fwaZeroHint').textContent=msg[1];
+    const recovery=recordedAlignment(d) && !connectionReady(d) && !busy && state!=='interrupted';
+    el('fwaZeroSavedPanel').hidden=!recovery;
+    el('fwaZeroSavedInfo').textContent='La verifica della rete \u00e8 sospesa o scaduta. L\'allineamento concluso e le scelte del router sono conservati. Riverifica il collegamento per sbloccare il passaggio.';
+    const a=zeroPrerequisites();error('fwaZeroError',recovery?a.filter(m=>!m.startsWith('Allineamento salvato.')):a);
+    el('fwaZeroRestart').disabled=busy || state==='done' || ready || !!a.length;
+    el('fwaZeroRestart').textContent=busy?'Riavvio simulato in corso...':state==='done'?'Riavvio simulato completato':state==='interrupted'?'Ripeti spegnimento e riaccensione (demo)':'Simula spegnimento e riaccensione';
+    el('fwaZeroContinue').disabled=!ready || !!a.length;
+    el('fwaZeroBack').disabled=busy;
+    el('fwaZeroBack').textContent=needsRouter(o)?'Torna al router':'Torna all\'allineamento';
+    el('backBtn').disabled=busy;
+  }
+  function keepRebootConnection(d){
+    stopLinkClock();const generation=linkGeneration,key=keyFor(d.id),c=d.connection;linkKey=key;
+    linkTimer=setInterval(()=>{
+      if(generation!==linkGeneration)return;
+      if(keyFor(selectedOrderId)!==key || currentDraft()!==d){stopLinkClock();return;}
+      if(document.hidden || ![CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(activeId())){suspendConnection('Verifica sospesa fuori dalla procedura.');return;}
+      if(scope(d)!==c.scope || problems().length){loseConnection('Parametri o disponibilit\u00e0 antenna cambiati.','unknown');return;}
+      if(!connectionReady(d)){loseConnection('Collegamento non aggiornato dopo il riavvio. Ripeti la verifica.','unknown');return;}
+      c.lastSeenAt=new Date().toISOString();refreshConnectionUI();
+    },500);
+  }
+  function startZeroReboot(){
+    const d=currentDraft();if(!d || d.completion || activeId()!==ZERO || document.hidden || zeroBusy(d) || zeroDone(d))return false;
+    const a=zeroPrerequisites();error('fwaZeroError',a);if(a.length)return false;
+    const attempt=(d.zeroTouch?.attempt || 0)+1;
+    stopZeroClock();stopLinkClock();pause('Riavvio programmato per File Zero Touch');
+    d.zeroTouch={scope:zeroScope(d),state:'off',attempt,requestedAt:new Date().toISOString(),restartedAt:'',completedAt:'',
+      alignmentEpoch:d.alignment.connectionEpoch,connectionEpoch:null,reason:'',fileReceiptVerified:false,simulated:true};
+    const z=d.zeroTouch,checkpoint=zeroScope(d),generation=zeroGeneration,key=keyFor(d.id);
+    d.connection={...d.connection,state:'restarting',network:false,reason:'Spegnimento programmato (demo) per File Zero Touch.'};
+    recordLinkEvent(d,'Spegnimento programmato per File Zero Touch (simulazione)');renderZero();refreshConnectionUI();
+    const started=Date.now();
+    zeroTimer=setInterval(()=>{
+      if(generation!==zeroGeneration)return;
+      if(currentDraft()!==d || keyFor(selectedOrderId)!==key){stopZeroClock();return;}
+      if(document.hidden || activeId()!==ZERO){interruptZero('Prova sospesa: ripeti il riavvio al rientro.');return;}
+      if(zeroScope(d)!==checkpoint || zeroPrerequisites().length){
+        stopZeroClock();loseConnection('Parametri o apparati cambiati durante il riavvio. Verifica la selezione.','unknown');renderZero();return;
+      }
+      const elapsed=Date.now()-started;
+      if(elapsed>=3500){
+        stopZeroClock();const now=new Date().toISOString();
+        d.connection={...blankConnection(),state:'connected',scope:scope(d),observedMac:d.mac,observedNodeId:d.nodeId,network:true,
+          startedAt:z.requestedAt,connectedAt:now,lastSeenAt:now,epoch:++d.linkEpoch,reason:'Riaggancio dopo riavvio programmato (demo).'};
+        // Preserve the original alignment samples/time. Bridge ONLY this explicit planned reboot.
+        d.alignmentBridge={scope:scope(d),alignmentEndedAt:d.alignment.endedAt,sourceEpoch:d.alignment.connectionEpoch,connectionEpoch:d.connection.epoch,simulated:true};
+        z.state='done';z.completedAt=now;z.connectionEpoch=d.connection.epoch;
+        recordLinkEvent(d,'Riavvio e riaggancio completati (demo); ricezione File Zero Touch reale non verificata.');
+        keepRebootConnection(d);renderZero();refreshConnectionUI();return;
+      }
+      if(elapsed>=2300)z.state='checking';
+      else if(elapsed>=1100){if(!z.restartedAt)z.restartedAt=new Date().toISOString();z.state='waiting';}
+      renderZero();
+    },250);
+    return true;
+  }
+  function continueZero(){
+    const d=currentDraft();if(!d || d.completion || activeId()!==ZERO)return false;
+    const a=[...alignmentProblems(),...zeroPrerequisites()];
+    if(!zeroDone(d))a.push('Completa prima la prova di spegnimento e riaccensione dell\'antenna.');
+    error('fwaZeroError',a);if(a.length){el('fwaZeroContinue').disabled=true;return false;}
+    navigate(SUMMARY);return true;
+  }
+
   function makeRecord(){
     const d=currentDraft(),o=selectedOrder();if(!d || !o)return null;
     const a=candidates(d.model).find(a=>a.mac===d.mac);
-    return {order:clone(o),partner:{code:owner(),name:loggedInPartner?.name || ''},antenna:a?clone(a):{model:d.model,mac:d.mac,wirelessMac:''},cluster:clusterFor(o)?{id:clusterFor(o).id,name:clusterFor(o).name}:null,node:nodeFor(d)?clone(nodeFor(d)):null,router:needsRouter(o)?clone(routerFor(d)):null,routerByCustomer:!needsRouter(o),alignment:d.alignment?clone(d.alignment):null,startedAt:d.startedAt,completedAt:'',simulated:true};
+    return {order:clone(o),partner:{code:owner(),name:loggedInPartner?.name || ''},antenna:a?clone(a):{model:d.model,mac:d.mac,wirelessMac:''},cluster:clusterFor(o)?{id:clusterFor(o).id,name:clusterFor(o).name}:null,node:nodeFor(d)?clone(nodeFor(d)):null,router:needsRouter(o)?clone(routerFor(d)):null,routerByCustomer:!needsRouter(o),connection:clone(d.connection),connectionEvents:clone(d.linkEvents),alignment:d.alignment?clone(d.alignment):null,zeroTouch:d.zeroTouch?clone(d.zeroTouch):null,startedAt:d.startedAt,completedAt:'',simulated:true};
   }
   function addCard(host,title,rows){
     const card=textNode('section','','fwa-report-card');card.append(textNode('h2',title));
@@ -8105,11 +8625,13 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   }
   function fillReport(host,record){
     host.replaceChildren();if(!record)return;const r=record,a=r.antenna;
+    host.append(SNA_CUSTOMER_CONTACTS.create(r.order,false,true));
 
     addCard(host,'Apparati installati \u00b7 prova',[['Antenna',a.model],['MAC antenna',a.mac],['Wireless MAC',a.wirelessMac],['Router',r.routerByCustomer?'Privato: fornito e installato dal cliente':r.router?.model || 'Da selezionare'],['Marchio',r.router?.brand],['SN router',r.router?.sn]]);
-    addCard(host,'Nodo di aggancio \u00b7 demo',[['Cluster',r.cluster?r.cluster.name+' / '+r.cluster.id:'Non disponibile'],['Nodo selezionato',r.node?r.node.name+' / '+r.node.id:'Non disponibile']]);
+    addCard(host,'Aggancio al nodo \u00b7 simulazione',[['Cluster',r.cluster?r.cluster.name+' / '+r.cluster.id:'Non disponibile'],['Nodo selezionato',r.node?r.node.name+' / '+r.node.id:'Non disponibile'],['Nodo rilevato (demo)',r.connection?.observedNodeId || 'Non verificato'],['MAC rilevato (demo)',r.connection?.observedMac || 'Non verificato'],['Collegamento rete',r.connection?.network?'Disponibile alla verifica (demo)':'Non disponibile'],['Aggancio verificato il',dateTime(r.connection?.connectedAt)]]);
     const x=r.alignment;
     const chart=addCard(host,'Allineamento terminato \u00b7 simulazione',[['Segnale finale',x?fmtDb(x.finalDbm)+' dBm':'Non terminato'],['Picco della prova',x?fmtDb(x.peakDbm)+' dBm':'\u2014'],['Campioni acquisiti',x?String(x.sampleCount):'0'],['Terminato il',x?dateTime(x.endedAt):'\u2014']]);reportChart(chart,x);
+    if(r.zeroTouch){addCard(host,'Riavvio antenna - File Zero Touch',[['Operazione','Spegnimento e riaccensione (demo)'],['Riaggancio',r.zeroTouch.state==='done'?'Completato nella simulazione':'Da completare'],['Terminato il',dateTime(r.zeroTouch.completedAt)],['File Zero Touch reale','Ricezione non verificata - nessuna comunicazione con apparati reali']]);}
     addCard(host,'Attivit\u00e0 e indicazioni operatore',[['Attivit\u00e0',r.order.id],['Cliente',r.order.client],['Contratto',r.order.contract],['Fornitura',typeLabel(r.order)],['Testo operatore (demo)',r.order.operatorText]]);
   }
   function renderSummary(){
@@ -8120,7 +8642,7 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     const d=currentDraft();if(!d)return false;if(d.completion){navigate(FINAL);return true;}
     if(activeId()!==SUMMARY)return false;
     const a=completionProblems();error('fwaSummaryError',a);if(a.length){el('fwaFinishInstallation').disabled=true;return false;}
-    pause('Installazione completata');const r=makeRecord();r.completedAt=new Date().toISOString();d.completion=freeze(r);navigate(FINAL);return true;
+    pause('Installazione completata');stopZeroClock();stopLinkClock();const r=makeRecord();r.completedAt=new Date().toISOString();d.completion=freeze(r);navigate(FINAL);return true;
   }
   function renderFinal(){
     const r=currentDraft()?.completion;if(!r)return;
@@ -8130,15 +8652,25 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
   function safeScreen(id){
     if(!isOurScreen(id))return id;if(!owner())return 'screen-login';if(id===ROOT)return ROOT;
     const d=currentDraft();if(!d)return ROOT;if(d.completion && id!==DETAIL)return FINAL;
-    if(id===FINAL)return DETAIL;if([ALIGN,ROUTER,SUMMARY].includes(id) && !d.startedAt)return DETAIL;
-    if([ROUTER,SUMMARY].includes(id) && !aligned(d))return ALIGN;
-    if(id===ROUTER && !needsRouter(selectedOrder()))return SUMMARY;
-    if(id===SUMMARY && needsRouter(selectedOrder()) && !d.routerConfirmed)return ROUTER;return id;
+    if(id===FINAL)return DETAIL;
+    if([CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(id) && !d.startedAt)return DETAIL;
+    if([CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(id) && problems().length)return PARAMS;
+    if(zeroBusy(d))return ZERO;
+    if([ZERO,SUMMARY].includes(id) && zeroCheckpoint(d) && d.zeroTouch.state==='interrupted'){
+      if(needsRouter(selectedOrder()) && (!d.routerConfirmed || routerProblems().length))return ROUTER;
+      return ZERO;
+    }
+    if([ALIGN,ROUTER,ZERO,SUMMARY].includes(id) && !connectionReady(d))return CONNECT;
+    if([ROUTER,ZERO,SUMMARY].includes(id) && !aligned(d))return ALIGN;
+    if(id===ROUTER && !needsRouter(selectedOrder()))return ZERO;
+    if([ZERO,SUMMARY].includes(id) && needsRouter(selectedOrder()) && (!d.routerConfirmed || routerProblems().length))return ROUTER;
+    if(id===SUMMARY && !zeroDone(d))return ZERO;
+    return id;
   }
   function refreshForScreen(id){
-    id=safeScreen(id);if(id!==ALIGN)pause('Navigazione');
-    ({[ROOT]:renderList,[DETAIL]:renderDetail,[PARAMS]:renderParameters,[ALIGN]:renderAlignment,[ROUTER]:renderRouter,[SUMMARY]:renderSummary,[FINAL]:renderFinal}[id] || (()=>{}))();
-    renderProgress(id);return id;
+    id=safeScreen(id);el('backBtn').disabled=false;if(![CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(id))suspendConnection('Verifica sospesa fuori dalla procedura: ripetere l\'aggancio.');if(id!==ALIGN)pause('Navigazione');
+    ({[ROOT]:renderList,[DETAIL]:renderDetail,[PARAMS]:renderParameters,[CONNECT]:renderConnection,[ALIGN]:renderAlignment,[ROUTER]:renderRouter,[ZERO]:renderZero,[SUMMARY]:renderSummary,[FINAL]:renderFinal}[id] || (()=>{}))();
+    renderProgress(id);if([CONNECT,ALIGN,ROUTER,ZERO,SUMMARY].includes(id))refreshConnectionUI();return id;
   }
   const baseShow=showScreen;showScreen=function(id){return baseShow.call(this,refreshForScreen(id));};
   const baseGo=goToScreen;goToScreen=function(id){return baseGo.call(this,refreshForScreen(id));};
@@ -8147,27 +8679,35 @@ html[data-sna-theme="siportal"] #fwaOrientation {appearance:auto;padding:0;width
     if(isOurScreen(id)){
       ['tab-ticket','tab-disinstallazioni','tab-magazzino'].forEach(k=>el(k).classList.remove('active'));
       el('topbar').style.display='flex';el('topTitle').textContent='Installazioni FWA';
-      el('topSub').textContent=({[ROOT]:assignedOrders().length+' attivit\u00e0 fittizie',[DETAIL]:'Dettaglio attivit\u00e0',[PARAMS]:'Parametri antenna',[ALIGN]:'Allineamento di prova',[ROUTER]:'Router da magazzino',[SUMMARY]:'Resoconto installazione',[FINAL]:'Completata \u00b7 demo'})[id];
+      el('topSub').textContent=({[ROOT]:assignedOrders().length+' attivit\u00e0 fittizie',[DETAIL]:'Dettaglio attivit\u00e0',[PARAMS]:'Parametri antenna',[CONNECT]:'Aggancio prima del puntamento',[ALIGN]:'Allineamento di prova',[ROUTER]:'Router da magazzino',[ZERO]:'Riavvio per File Zero Touch',[SUMMARY]:'Resoconto installazione',[FINAL]:'Completata \u00b7 demo'})[id];
       el('trail').style.display='none';el('bottomBar').style.display='none';el('tabBar').style.display='flex';el('backBtn').classList.toggle('show',id!==ROOT && id!==FINAL);el('logoutBtn').classList.toggle('show',id===ROOT);el('topLogo').style.display='none';
     }return result;
   };
   const baseSwitch=switchTab;switchTab=function(t){return t==='installazioni-fwa'?openRoot():baseSwitch.apply(this,arguments);};
-  const baseLogout=doLogout;doLogout=function(){pause('Disconnessione');selectedOrderId=null;filter='all';return baseLogout.apply(this,arguments);};
+  const baseLogout=doLogout;doLogout=function(){suspendConnection('Accesso terminato: nuova verifica necessaria.');pause('Disconnessione');selectedOrderId=null;filter='all';return baseLogout.apply(this,arguments);};
   window.SNA_INSTALLAZIONI_FWA=Object.freeze({version:VERSION,mode:'demo',open:openRoot,activities:()=>assignedOrders().map(o=>({...o,status:stateLabel(drafts.get(keyFor(o.id)))})),availableMacs:m=>candidates(m).map(x=>({...x})),availableRouters:()=>routers().map(r=>({...r})),snapshot:()=>clone({order:selectedOrder(),cluster:clusterFor(selectedOrder()),draft:currentDraft(),running:timer!==null,mode:'demo'})});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause('Scheda non visibile');});window.addEventListener('pagehide',()=>pause('Pagina chiusa'));
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){suspendConnection('Monitoraggio sospeso: app in secondo piano.');pause('Scheda non visibile');}
+    else {const id=activeId();if(id===CONNECT)renderConnection();else if(id===ALIGN)renderAlignment();else if(id===ROUTER)renderRouter();else if(id===ZERO)renderZero();else if(id===SUMMARY)renderSummary();}
+  });window.addEventListener('pagehide',()=>{suspendConnection('Pagina sospesa: riverifica il collegamento al rientro.');pause('Pagina sospesa');});
   document.addEventListener('DOMContentLoaded',()=>{
     el('fwaStartActivity').onclick=startActivity;
+    el('fwaZeroRecheck').onclick=openConnection;el('fwaZeroRestart').onclick=startZeroReboot;el('fwaZeroContinue').onclick=continueZero;el('fwaZeroBack').onclick=()=>{if(!zeroBusy())navigate(needsRouter(selectedOrder())?ROUTER:ALIGN);};
+    el('fwaSummaryEditZero').onclick=()=>navigate(ZERO);
+    el('fwaConnectionStart').onclick=startConnection;el('fwaBeginPointing').onclick=beginPointing;el('fwaConnectionScenario').onchange=e=>changeConnectionScenario(e.target.value);el('fwaConnectionBack').onclick=editParameters;
+    document.querySelectorAll('[data-fwa-check-link]').forEach(b=>b.onclick=openConnection);
+    document.querySelectorAll('[data-fwa-drop-link]').forEach(b=>b.onclick=()=>{if(connectionReady())loseConnection('Perdita di collegamento simulata. Ripeti l\'aggancio e poi acquisisci nuovi campioni.');});
     document.querySelectorAll('[data-fwa-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.fwaFilter;renderList();});
     el('fwaParamsForm').onsubmit=e=>{e.preventDefault();openAlignment();};
     el('fwaAntenna').onchange=e=>changeParameter('model',e.target.value);el('fwaMac').onchange=e=>changeParameter('mac',normalize(e.target.value));el('fwaNode').onchange=e=>changeParameter('nodeId',e.target.value);
-    el('fwaOrientation').oninput=e=>{const d=currentDraft();if(!d || d.completion || aligned(d))return;d.position=Math.max(-30,Math.min(30,Number(e.target.value)||0));el('fwaOrientationValue').textContent=(d.position>0?'+':'')+d.position+'\u00b0';updateAlignmentControls();};
+    el('fwaOrientation').oninput=e=>{const d=currentDraft();if(!d || d.completion || aligned(d) || !connectionReady(d))return;d.position=Math.max(-30,Math.min(30,Number(e.target.value)||0));el('fwaOrientationValue').textContent=(d.position>0?'+':'')+d.position+'\u00b0';updateAlignmentControls();};
     el('fwaSimToggle').onclick=toggleSimulation;el('fwaSimReset').onclick=resetSimulation;el('fwaEditParameters').onclick=editParameters;el('fwaBackToList').onclick=openRoot;
     el('fwaFinishAlignment').onclick=finishAlignment;el('fwaAlignmentContinue').onclick=continueAlignment;
-    el('fwaRouterBrand').onchange=e=>changeRouter('brand',e.target.value);el('fwaRouterSN').onchange=e=>changeRouter('sn',e.target.value);
+    el('fwaRouterBrand').onchange=e=>changeRouter('brand',e.target.value);el('fwaRouterModel').onchange=e=>changeRouter('model',e.target.value);el('fwaRouterSN').onchange=e=>changeRouter('sn',e.target.value);
     el('fwaRouterForm').onsubmit=e=>{e.preventDefault();continueRouter();};el('fwaRouterBack').onclick=()=>navigate(ALIGN);
     el('fwaSummaryEditRouter').onclick=()=>navigate(ROUTER);el('fwaSummaryEditAlignment').onclick=()=>navigate(ALIGN);el('fwaFinishInstallation').onclick=finishInstallation;el('fwaCompletedBack').onclick=openRoot;
-    const bar=document.querySelector('.preview-bar');if(bar){bar.querySelector('small').textContent='Email disattivate | Installazioni FWA r17';bar.querySelector('strong').title=VERSION;}
-    if(el('buildVersionTag'))el('buildVersionTag').textContent=VERSION;document.documentElement.dataset.snaInstallazioniVersion=VERSION;document.title='SNA - Installazioni FWA - allineamento e router r17';
+    const bar=document.querySelector('.preview-bar');if(bar){bar.querySelector('small').textContent='Email disattivate | Contatti clienti r22';bar.querySelector('strong').title=VERSION;}
+    if(el('buildVersionTag'))el('buildVersionTag').textContent=VERSION;document.documentElement.dataset.snaInstallazioniVersion=VERSION;document.title='SNA - Contatti clienti - Installazioni e Disinstallazioni r22';
   },{once:true});
 })();
 </script>
@@ -8242,6 +8782,99 @@ html[data-sna-theme="siportal"] .fwa-step-line {font-size:10px;gap:6px;}
 html[data-sna-theme="siportal"] .fwa-step-line>span {flex:1;text-align:center;line-height:1.4;}
 @media(max-width:350px){.fwa-operator-note{padding:11px;}.fwa-operator-head{flex-wrap:wrap;}.fwa-report-card{padding:11px;}html[data-sna-theme="siportal"] .fwa-step-line {font-size:9px;gap:4px;} .fwa-order-header .fwa-state{max-width:120px;}}
 </style>
+
+<style id="sna-fwa-connection-style">
+/* r19: local attachment verification UI, flat colours and both existing themes. */
+html[data-sna-theme="siportal"] {--fwa-link-ok:#7CE3AF;--fwa-link-ok-bg:#18392C;--fwa-link-wait:#FFBB7D;}
+html[data-sna-theme="siportal"][data-sna-color-mode="white"] {--fwa-link-ok:#176242;--fwa-link-ok-bg:#E8F5ED;--fwa-link-wait:#903C09;}
+.fwa-link-instructions {font:13px/1.55 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-link-instructions strong {display:block;}
+.fwa-link-card {background:var(--fwa-surface);border:1px solid var(--fwa-line);border-radius:12px;padding:16px;flex-shrink:0;}
+.fwa-link-visual {display:flex;align-items:center;justify-content:center;gap:10px;color:var(--fwa-muted);margin:0 0 12px;}
+.fwa-link-visual svg {width:32px;height:32px;flex:none;}
+.fwa-link-wire {height:0;width:50px;border-top:2px dashed var(--fwa-line);}
+.fwa-link-indicator {width:10px;height:10px;flex:none;border-radius:50%;background:var(--fwa-muted);}
+.fwa-link-state {font:700 17px/1.3 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-link-hint {margin:7px 0 12px;font:12px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-link-equipment {display:flex;flex-direction:column;gap:4px;padding:10px 0;border-top:1px solid var(--fwa-line);}
+.fwa-link-equipment strong {font:600 14px/1.4 'Segoe UI',Arial,sans-serif;}
+.fwa-link-equipment span {font:12px/1.5 ui-monospace,monospace;color:var(--fwa-muted);}
+.fwa-link-facts {display:flex;flex-direction:column;gap:9px;}
+.fwa-link-facts>div {display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:start;border-top:1px solid var(--fwa-line);padding-top:9px;}
+.fwa-link-facts dt {font:11px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-link-facts dd {font:600 11.5px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);overflow-wrap:anywhere;}
+.fwa-link-card[data-state="connected"] {border-color:var(--fwa-link-ok);}
+[data-state="connected"]>.fwa-link-state {color:var(--fwa-link-ok);}
+[data-state="connected"] .fwa-link-indicator {background:var(--fwa-link-ok);}
+[data-state="connected"] .fwa-link-wire {border-color:var(--fwa-link-ok);border-top-style:solid;}
+[data-state="connected"] .fwa-link-visual {color:var(--fwa-link-ok);}
+[data-state="waiting"]>.fwa-link-state {color:var(--fwa-link-wait);}
+[data-state="waiting"] .fwa-link-indicator {background:var(--fwa-orange);}
+.fwa-link-card[data-state="error"] {border-color:var(--fwa-error);}
+[data-state="error"]>.fwa-link-state {color:var(--fwa-error);}
+[data-state="error"] .fwa-link-indicator {background:var(--fwa-error);}
+.fwa-link-demo {border-left:3px solid var(--fwa-orange);background:var(--fwa-surface);padding:9px 11px;font:11.5px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);}
+.fwa-link-scenarios {border:1px solid var(--fwa-line);border-radius:8px;padding:12px;color:var(--fwa-text);flex-shrink:0;}
+.fwa-link-scenarios summary {font:600 12px/1.4 'Segoe UI',Arial,sans-serif;cursor:pointer;min-height:24px;}
+.fwa-link-scenarios label {display:block;font:12px/1.4 'Segoe UI',Arial,sans-serif;margin:12px 0 6px;}
+html[data-sna-theme="siportal"] .fwa-link-scenarios select {background:var(--fwa-field)!important;color:var(--fwa-text)!important;border:1px solid var(--fwa-line)!important;border-radius:7px;padding:10px;width:100%;min-height:44px;font:12px/1.4 'Segoe UI',Arial,sans-serif;}
+.fwa-link-scenarios p {font:11px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);margin-top:9px;}
+.fwa-link-banner {border:1px solid var(--fwa-line);border-left:3px solid var(--fwa-orange);border-radius:8px;padding:11px;background:var(--fwa-surface);flex-shrink:0;}
+.fwa-link-banner[data-state="connected"] {border-left-color:var(--fwa-link-ok);}
+.fwa-link-banner[data-state="error"] {border-left-color:var(--fwa-error);}
+.fwa-link-banner strong {display:block;font:600 12px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-link-banner[data-state="connected"] strong {color:var(--fwa-link-ok);}
+.fwa-link-banner[data-state="error"] strong {color:var(--fwa-error);}
+.fwa-link-banner p {font:11px/1.4 'Segoe UI',Arial,sans-serif;margin:4px 0 8px;color:var(--fwa-muted);}
+.fwa-link-banner .fwa-secondary {font-size:11px;min-height:40px;padding:7px 8px;}
+.fwa-install[data-link-ready="false"] .fwa-chart-line,.fwa-install[data-link-ready="false"] .fwa-chart-dot {stroke:var(--fwa-muted);}
+.fwa-install[data-link-ready="false"] .fwa-chart-dot {fill:var(--fwa-muted);}
+.fwa-step-line {flex-wrap:wrap;}
+@media(max-width:350px){.fwa-link-card{padding:12px;}.fwa-link-facts>div{grid-template-columns:86px minmax(0,1fr);gap:8px;}.fwa-link-state{font-size:16px;}}
+
+.fwa-link-details {margin-top:8px;}
+.fwa-link-details summary {font:600 11px/1.4 'Segoe UI',Arial,sans-serif;cursor:pointer;padding:8px 0;color:var(--fwa-muted);}
+.fwa-link-actions {display:flex;gap:8px;flex-shrink:0;}
+.fwa-link-actions>button {flex:1;min-width:0;min-height:52px;font-size:12px;}
+.fwa-step-line>span {white-space:nowrap;flex:0 0 auto!important;}
+
+.fwa-link-card .fwa-link-actions {margin:12px 0 8px;}
+.fwa-link-card #fwaPointingLock {margin:7px 0 12px;}
+
+</style>
+<style id="sna-fwa-zero-touch-style">
+/* r20: same solid White / Black surfaces; no gradients, shadows or extra motion. */
+.fwa-zero-notice {padding:14px;border:1px solid var(--fwa-orange);border-left:4px solid var(--fwa-orange);border-radius:10px;background:var(--fwa-surface);color:var(--fwa-text);display:flex;flex-direction:column;gap:9px;}
+.fwa-zero-notice-head {display:flex;align-items:center;gap:9px;color:var(--fwa-accent);font:700 15px/1.3 'Segoe UI',Arial,sans-serif;}
+.fwa-zero-notice-head svg {width:23px;height:23px;flex:none;}
+.fwa-zero-notice p {font:13px/1.5 'Segoe UI',Arial,sans-serif;color:var(--fwa-text);}
+.fwa-zero-context {display:flex;flex-direction:column;gap:5px;font:12px/1.4 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);overflow-wrap:anywhere;}
+.fwa-zero-context strong {color:var(--fwa-text);font-weight:600;}
+#fwaZeroMac {font-family:ui-monospace,monospace;}
+.fwa-zero-status {padding:12px;border:1px solid var(--fwa-line);border-radius:9px;background:var(--fwa-field);color:var(--fwa-text);}
+.fwa-zero-status strong {font:650 13px/1.4 'Segoe UI',Arial,sans-serif;}
+.fwa-zero-status p {font:12px/1.45 'Segoe UI',Arial,sans-serif;color:var(--fwa-muted);margin-top:5px;}
+.fwa-zero-status[data-state="done"] {border-color:var(--fwa-orange);}
+.fwa-zero-status[data-state="done"] strong {color:var(--fwa-accent);}
+.fwa-zero-status[data-state="off"],.fwa-zero-status[data-state="waiting"],.fwa-zero-status[data-state="checking"] {border-style:dashed;border-color:var(--fwa-orange);}
+.fwa-zero-status[data-state="interrupted"] {border-color:var(--fwa-error);}
+.fwa-zero-status[data-state="interrupted"] strong {color:var(--fwa-error);}
+#fwaZeroBack:disabled {opacity:.48;}
+</style>
+
+<script id="sna-disinstallation-contacts-final">
+(()=>{
+  function refresh(){
+    if(!document.getElementById('screen-disinstallazione-finale')?.classList.contains('active'))return;
+    const record=snaDisClosed[currentDisinstallazioneId]?.ticket || DISINSTALLAZIONI.find(d=>d.id===currentDisinstallazioneId);
+    if(!record)return;
+    let host=document.getElementById('disinstFinalContacts');
+    if(!host){host=document.createElement('div');host.id='disinstFinalContacts';document.getElementById('disinstRecap').before(host);}
+    SNA_CUSTOMER_CONTACTS.render(host,record,false,true);
+  }
+  const oldUpdate=updateTop;updateTop=function(){const result=oldUpdate.apply(this,arguments);refresh();return result;};
+})();
+</script>
 
 </body>
 </html>
